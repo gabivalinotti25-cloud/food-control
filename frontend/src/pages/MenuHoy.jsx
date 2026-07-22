@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 export default function MenuHoy() {
 
@@ -25,7 +27,7 @@ export default function MenuHoy() {
   async function cargarMenu() {
 
     const res = await fetch(
-      "http://localhost:3000/menu"
+      `${API_URL}/menu`
     );
 
     const data = await res.json();
@@ -40,7 +42,7 @@ export default function MenuHoy() {
   async function cargarProductos() {
 
     const res = await fetch(
-      "http://localhost:3000/productos"
+      `${API_URL}/productos`
     );
 
 
@@ -58,7 +60,7 @@ export default function MenuHoy() {
 
 
     await fetch(
-      "http://localhost:3000/menu/copiar",
+      `${API_URL}/menu/copiar`,
       {
         method: "POST"
       }
@@ -76,7 +78,7 @@ export default function MenuHoy() {
 
 
     await fetch(
-      "http://localhost:3000/menu/agregar",
+      `${API_URL}/menu/agregar`,
       {
 
         method: "POST",
@@ -104,7 +106,7 @@ export default function MenuHoy() {
 
 
     await fetch(
-      `http://localhost:3000/menu/producto/${id}`,
+      `${API_URL}/menu/producto/${id}`,
       {
         method: "DELETE"
       }

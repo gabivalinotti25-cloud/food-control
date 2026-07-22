@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function Productos() {
 
   const [productos, setProductos] = useState([]);
@@ -26,7 +28,7 @@ export default function Productos() {
   async function cargarProductos() {
 
     const res = await fetch(
-      "http://localhost:3000/productos"
+      `${API_URL}/productos`
     );
 
     const data = await res.json();
@@ -40,7 +42,7 @@ export default function Productos() {
     e.preventDefault();
 
     await fetch(
-      "http://localhost:3000/productos",
+      `${API_URL}/productos`,
       {
         method: "POST",
         headers: {
@@ -76,7 +78,7 @@ export default function Productos() {
   async function guardarEdicion() {
 
     await fetch(
-      `http://localhost:3000/productos/${editandoId}`,
+      `${API_URL}/productos/${editandoId}`,
       {
         method: "PUT",
         headers: {
@@ -95,7 +97,7 @@ export default function Productos() {
   async function cambiarEstado(id) {
 
     await fetch(
-      `http://localhost:3000/productos/${id}/estado`,
+      `${API_URL}/productos/${id}/estado`,
       {
         method: "PATCH"
       }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function Pedidos() {
   const [clientes, setClientes] = useState([]);
   const [pedidos, setPedidos] = useState([]);
@@ -18,13 +20,13 @@ export default function Pedidos() {
   }, []);
 
   async function cargarClientes() {
-    const res = await fetch("http://localhost:3000/clientes");
+    const res = await fetch(`${API_URL}/clientes`);
     const data = await res.json();
     setClientes(data);
   }
 
   async function cargarPedidos() {
-    const res = await fetch("http://localhost:3000/pedidos");
+    const res = await fetch(`${API_URL}/pedidos`);
     const data = await res.json();
     setPedidos(data);
   }
@@ -32,7 +34,7 @@ export default function Pedidos() {
   async function guardarPedido(e) {
     e.preventDefault();
 
-    const res = await fetch("http://localhost:3000/pedidos", {
+    const res = await fetch(`${API_URL}/pedidos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

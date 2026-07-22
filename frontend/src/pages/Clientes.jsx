@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
 
@@ -12,7 +14,7 @@ export default function Clientes() {
   });
 
   async function cargarClientes() {
-    const res = await fetch("http://localhost:3000/clientes");
+    const res = await fetch(`${API_URL}/clientes`);
     const data = await res.json();
     setClientes(data);
   }
@@ -24,7 +26,7 @@ export default function Clientes() {
   async function guardarCliente(e) {
     e.preventDefault();
 
-    await fetch("http://localhost:3000/clientes", {
+    await fetch(`${API_URL}/clientes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

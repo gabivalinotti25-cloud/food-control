@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function CuentaCorriente() {
   const [clientes, setClientes] = useState([]);
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
@@ -14,7 +16,7 @@ export default function CuentaCorriente() {
   }, []);
 
   async function cargarClientes() {
-    const res = await fetch("http://localhost:3000/clientes");
+    const res = await fetch(`${API_URL}/clientes`);
     const data = await res.json();
     setClientes(data);
   }
@@ -23,7 +25,7 @@ export default function CuentaCorriente() {
     setClienteSeleccionado(cliente);
 
     const res = await fetch(
-      `http://localhost:3000/cuenta/${cliente.id}`
+      `${API_URL}/cuenta/${cliente.id}`
     );
 
     const data = await res.json();
@@ -37,7 +39,7 @@ export default function CuentaCorriente() {
   async function registrarPago() {
     if (!clienteSeleccionado) return;
 
-    const res = await fetch("http://localhost:3000/pagos", {
+    const res = await fetch(`${API_URL}/pagos`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
