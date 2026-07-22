@@ -1,0 +1,240 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  nombre    String
+  rol       Rol      @default(EMPLEADO)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+enum Rol {
+  ADMIN
+  EMPLEADO
+}
+
+
+model Cliente {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  telefono    String   @unique
+  direccion   String?
+  observacion String?
+  saldo       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  pedidos      Pedido[]
+  movimientos  MovimientoCuenta[]
+}
+
+
+model Producto {
+  id         Int      @id @default(autoincrement())
+
+  nombre     String
+  precio     Int
+
+  activo     Boolean  @default(true)
+
+  orden      Int      @default(0)
+
+  esLibre    Boolean  @default(false)
+
+  esFijo     Boolean  @default(false)
+  
+  esEspecial Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+
+  detallesPedido PedidoDetalle[]
+  menus MenuPlantillaDetalle[]
+  menusDiarios MenuDiarioDetalle[]
+}
+
+model Pedido {
+  id        Int      @id @default(autoincrement())
+  fecha     DateTime @default(now())
+  total     Int
+
+  estado      PedidoEstado @default(PENDIENTE)
+  estadoPago  EstadoPago  @default(PENDIENTE)
+
+  clienteId Int
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  pago     Pago?
+  detalles PedidoDetalle[]
+}
+
+
+model PedidoDetalle {
+  id Int @id @default(autoincrement())
+
+  pedidoId Int
+  pedido Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  productoId Int?
+  producto Producto? @relation(fields: [productoId], references: [id])
+
+  descripcion String?
+
+  cantidad Int
+
+  precioUnitario Int
+
+  subtotal Int
+}
+
+
+model Pago {
+  id Int @id @default(autoincrement())
+
+  monto Int
+
+  forma FormaPago
+
+  fechaPago DateTime @default(now())
+
+  pedidoId Int @unique
+  pedido Pedido @relation(fields: [pedidoId], references: [id])
+}
+
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+}
+
+
+enum FormaPago {
+  EFECTIVO
+  TRANSFERENCIA
+}
+
+
+enum PedidoEstado {
+  PENDIENTE
+  PREPARANDO
+  EN_CAMINO
+  ENTREGADO
+}
+
+
+model MovimientoCuenta {
+  id Int @id @default(autoincrement())
+
+  fecha DateTime @default(now())
+
+  tipo TipoMovimiento
+
+  concepto String
+
+  monto Int
+
+  formaPago FormaPago?
+
+  clienteId Int
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+}
+
+
+enum TipoMovimiento {
+  CARGO
+  ABONO
+}
+
+
+model MenuPlantilla {
+  id Int @id @default(autoincrement())
+
+  diaSemana Int
+
+  productos MenuPlantillaDetalle[]
+}
+
+
+model MenuPlantillaDetalle {
+  id Int @id @default(autoincrement())
+
+  menuId Int
+  menu MenuPlantilla @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  productoId Int
+  producto Producto @relation(fields: [productoId], references: [id])
+}
+
+
+model MenuDiario {
+  id Int @id @default(autoincrement())
+
+  fecha DateTime @unique
+
+  productos MenuDiarioDetalle[]
+}
+
+
+model MenuDiarioDetalle {
+  id Int @id @default(autoincrement())
+
+  menuId Int
+  menu MenuDiario @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  productoId Int
+  producto Producto @relation(fields: [productoId], references: [id])
+}
+
+
+model VentaAnonima {
+  id Int @id @default(autoincrement())
+  
+  monto Int
+  descripcion String?
+  formaPago FormaPago
+  fecha DateTime @default(now())
+}
+
+
+model CajaDiaria {
+  id Int @id @default(autoincrement())
+  
+  fecha DateTime @unique
+  
+  montoEfectivoEsperado Int @default(0)
+  montoTransferenciaEsperado Int @default(0)
+  montoEfectivoReal Int @default(0)
+  montoTransferenciaReal Int @default(0)
+  
+  observacion String?
+  cerrada Boolean @default(false)
+  fechaCierre DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model ConfiguracionMenu {
+  id Int @id @default(autoincrement())
+  
+  diaSemana Int // 0 = Domingo, 1 = Lunes, etc.
+  
+  productosFijos Boolean @default(true)
+  cantidadMaxEspeciales Int @default(2)
+  
+  activo Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
