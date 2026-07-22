@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../services/api";
 
 export default function CuentaCorriente() {
   const [clientes, setClientes] = useState([]);
@@ -16,19 +15,14 @@ export default function CuentaCorriente() {
   }, []);
 
   async function cargarClientes() {
-    const res = await fetch(`${API_URL}/clientes`);
-    const data = await res.json();
-    setClientes(data);
+    const { data } = await api.get("/clientes");
+    setClientes(Array.isArray(data) ? data : []);
   }
 
   async function verCuenta(cliente) {
     setClienteSeleccionado(cliente);
 
-    const res = await fetch(
-      `${API_URL}/cuenta/${cliente.id}`
-    );
-
-    const data = await res.json();
+    const { data } = await api.get(`/cuenta/${cliente.id}`);
 
     setMovimientos(data.movimientos || []);
 
@@ -39,29 +33,21 @@ export default function CuentaCorriente() {
   async function registrarPago() {
     if (!clienteSeleccionado) return;
 
-    const res = await fetch(`${API_URL}/pagos`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    try {
+      await api.post("/pagos", {
         clienteId: clienteSeleccionado.id,
         monto: Number(montoPago),
         formaPago,
-      }),
-    });
+      });
 
-    const data = await res.json();
-
-    if (res.ok) {
       alert("Pago registrado correctamente");
 
       setMontoPago("");
 
       await verCuenta(clienteSeleccionado);
       await cargarClientes();
-    } else {
-      alert(data.error);
+    } catch (error) {
+      alert(error.response?.data?.error || "Error al registrar el pago");
     }
   }
 

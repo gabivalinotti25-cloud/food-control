@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../services/api";
 
 export default function Productos() {
 
@@ -27,13 +26,9 @@ export default function Productos() {
 
   async function cargarProductos() {
 
-    const res = await fetch(
-      `${API_URL}/productos`
-    );
+    const { data } = await api.get("/productos");
 
-    const data = await res.json();
-
-    setProductos(data);
+    setProductos(Array.isArray(data) ? data : []);
 
   }
 
@@ -41,19 +36,10 @@ export default function Productos() {
 
     e.preventDefault();
 
-    await fetch(
-      `${API_URL}/productos`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          nombre,
-          precio
-        })
-      }
-    );
+    await api.post("/productos", {
+      nombre,
+      precio
+    });
 
     setNombre("");
     setPrecio("");
@@ -77,16 +63,7 @@ export default function Productos() {
 
   async function guardarEdicion() {
 
-    await fetch(
-      `${API_URL}/productos/${editandoId}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(editandoProducto)
-      }
-    );
+    await api.put(`/productos/${editandoId}`, editandoProducto);
 
     setEditandoId(null);
 
@@ -96,12 +73,7 @@ export default function Productos() {
 
   async function cambiarEstado(id) {
 
-    await fetch(
-      `${API_URL}/productos/${id}/estado`,
-      {
-        method: "PATCH"
-      }
-    );
+    await api.patch(`/productos/${id}/estado`);
 
     cargarProductos();
 

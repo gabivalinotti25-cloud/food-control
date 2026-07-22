@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../services/api";
 
 
 export default function MenuHoy() {
@@ -26,11 +25,7 @@ export default function MenuHoy() {
 
   async function cargarMenu() {
 
-    const res = await fetch(
-      `${API_URL}/menu`
-    );
-
-    const data = await res.json();
+    const { data } = await api.get("/menu");
 
     setMenu(data);
 
@@ -41,15 +36,10 @@ export default function MenuHoy() {
 
   async function cargarProductos() {
 
-    const res = await fetch(
-      `${API_URL}/productos`
-    );
+    const { data } = await api.get("/productos");
 
 
-    const data = await res.json();
-
-
-    setProductos(data);
+    setProductos(Array.isArray(data) ? data : []);
 
   }
 
@@ -59,12 +49,7 @@ export default function MenuHoy() {
   async function copiarMenu() {
 
 
-    await fetch(
-      `${API_URL}/menu/copiar`,
-      {
-        method: "POST"
-      }
-    );
+    await api.post("/menu/copiar");
 
 
     cargarMenu();
@@ -77,22 +62,9 @@ export default function MenuHoy() {
   async function agregarProducto(id) {
 
 
-    await fetch(
-      `${API_URL}/menu/agregar`,
-      {
-
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json"
-        },
-
-        body: JSON.stringify({
-          productoId: id
-        })
-
-      }
-    );
+    await api.post("/menu/agregar", {
+      productoId: id
+    });
 
 
     cargarMenu();
@@ -105,12 +77,7 @@ export default function MenuHoy() {
   async function eliminarProducto(id) {
 
 
-    await fetch(
-      `${API_URL}/menu/producto/${id}`,
-      {
-        method: "DELETE"
-      }
-    );
+    await api.delete(`/menu/producto/${id}`);
 
 
     cargarMenu();

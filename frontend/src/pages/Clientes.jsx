@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../services/api";
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
@@ -14,9 +13,8 @@ export default function Clientes() {
   });
 
   async function cargarClientes() {
-    const res = await fetch(`${API_URL}/clientes`);
-    const data = await res.json();
-    setClientes(data);
+    const { data } = await api.get("/clientes");
+    setClientes(Array.isArray(data) ? data : []);
   }
 
   useEffect(() => {
@@ -26,13 +24,7 @@ export default function Clientes() {
   async function guardarCliente(e) {
     e.preventDefault();
 
-    await fetch(`${API_URL}/clientes`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+    await api.post("/clientes", form);
 
     setForm({
       nombre: "",
