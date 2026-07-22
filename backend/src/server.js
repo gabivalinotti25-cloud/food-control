@@ -48,7 +48,7 @@ app.use("/configuracion-menu", configuracionMenuRoutes);
 app.use("/estadisticas", estadisticasRoutes);
 app.use("/backup", backupRoutes);
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor iniciado en http://localhost:${PORT}`);
