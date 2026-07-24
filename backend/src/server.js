@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
@@ -11,12 +12,12 @@ import deudasAntiguasRoutes from "./routes/deudasAntiguas.js";
 import productosRoutes from "./routes/productos.js";
 import categoriasRoutes from "./routes/categorias.js";
 import menuRoutes from "./routes/menu.js";
-import ventasAnonimasRoutes from "./routes/ventasAnonimas.js";
 import cajaRoutes from "./routes/caja.js";
 import configuracionMenuRoutes from "./routes/configuracionMenu.js";
 import estadisticasRoutes from "./routes/estadisticas.js";
 import backupRoutes from "./routes/backup.js";
 import authRoutes from "./routes/auth.js";
+import diaRoutes from "./routes/dia.js";
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     message: "Food Control API funcionando 🚀",
+    version: "1.0.0",
   });
 });
 
@@ -42,7 +44,7 @@ app.use("/deudas-antiguas", deudasAntiguasRoutes);
 app.use("/productos", productosRoutes);
 app.use("/categorias", categoriasRoutes);
 app.use("/menu", menuRoutes);
-app.use("/ventas-anonimas", ventasAnonimasRoutes);
+app.use("/dia", diaRoutes);
 app.use("/caja", cajaRoutes);
 app.use("/configuracion-menu", configuracionMenuRoutes);
 app.use("/estadisticas", estadisticasRoutes);

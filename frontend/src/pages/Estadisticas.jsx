@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 import api from "../services/api";
 
@@ -11,11 +11,7 @@ export default function Estadisticas() {
   const [tendencias, setTendencias] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    cargarDatos();
-  }, [periodo]);
-
-  async function cargarDatos() {
+  const cargarDatos = useCallback(async () => {
     try {
       const [estResponse, genResponse, prodResponse, cliResponse, tendResponse] =
         await Promise.all([
@@ -36,7 +32,11 @@ export default function Estadisticas() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [periodo]);
+
+  useEffect(() => {
+    cargarDatos();
+  }, [cargarDatos]);
 
   const formatoGs = (valor) => {
     return new Intl.NumberFormat("es-PY").format(valor || 0);
@@ -149,9 +149,9 @@ export default function Estadisticas() {
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 text-sm">Ventas Anónimas</p>
-                <p className="text-xl font-bold">
-                  {estadisticas.ventasAnonimas.total}
+                <p className="text-gray-500 text-sm">Pedidos fiados</p>
+                <p className="text-xl font-bold text-amber-600">
+                  {estadisticas.pedidos?.pendientes || 0}
                 </p>
               </div>
             </div>

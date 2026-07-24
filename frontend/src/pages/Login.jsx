@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 
 export default function Login() {
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState(location.state?.mensaje || "");
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -17,7 +19,10 @@ export default function Login() {
     setError("");
 
     try {
-      const response = await api.post("/auth/login", formData);
+      const response = await api.post("/auth/login", {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      });
       
       // Guardar token y usuario en localStorage
       localStorage.setItem("token", response.data.token);
@@ -26,9 +31,15 @@ export default function Login() {
       // Configurar axios para incluir token en todas las peticiones
       api.defaults.headers.common["Authorization"] = `Bearer ${response.data.token}`;
       
-      navigate("/");
+      const redirectTo = location.state?.from || "/";
+      navigate(redirectTo, { replace: true });
     } catch (error) {
-      setError(error.response?.data?.error || "Error al iniciar sesión");
+      setError(
+        error.response?.data?.error ||
+        (error.request
+          ? "No se pudo conectar con el servidor. Verifica que el backend esté corriendo en el puerto 3000."
+          : "Error al iniciar sesión")
+      );
     } finally {
       setLoading(false);
     }
@@ -41,6 +52,12 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-gray-800">Food Control</h1>
           <p className="text-gray-600 mt-2">Iniciar sesión</p>
         </div>
+
+        {mensaje && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
+            {mensaje}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">

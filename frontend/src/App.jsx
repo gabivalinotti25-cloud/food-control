@@ -1,147 +1,91 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import Dashboard from "./pages/Dashboard";
-import Pedidos from "./pages/Pedidos";
+import OperacionesDia from "./pages/OperacionesDia";
+import Deudas from "./pages/Deudas";
 import Clientes from "./pages/Clientes";
-import Caja from "./pages/Caja";
-import Configuracion from "./pages/Configuracion";
-import CuentaCorriente from "./pages/CuentaCorriente";
 import Productos from "./pages/Productos";
-import MenuHoy from "./pages/MenuHoy";
-import VentasAnonimas from "./pages/VentasAnonimas";
 import Estadisticas from "./pages/Estadisticas";
-import ConfiguracionMenu from "./pages/ConfiguracionMenu";
+import Configuracion from "./pages/Configuracion";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
 function App() {
-
   return (
-
     <BrowserRouter>
-
       <Routes>
-
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
 
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <OperacionesDia />
             </ProtectedRoute>
-          } 
+          }
         />
-
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dia/:fecha"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <OperacionesDia />
             </ProtectedRoute>
-          } 
+          }
         />
-
-        <Route 
-          path="/pedidos" 
+        <Route
+          path="/deudas"
           element={
             <ProtectedRoute>
-              <Pedidos />
+              <Deudas />
             </ProtectedRoute>
-          } 
+          }
         />
-
-        <Route 
-          path="/clientes" 
+        <Route
+          path="/clientes"
           element={
             <ProtectedRoute>
               <Clientes />
             </ProtectedRoute>
-          } 
+          }
         />
-
-        <Route 
-          path="/caja" 
-          element={
-            <ProtectedRoute>
-              <Caja />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/configuracion" 
-          element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <Configuracion />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/cuenta" 
-          element={
-            <ProtectedRoute>
-              <CuentaCorriente />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/productos" 
+        <Route
+          path="/productos"
           element={
             <ProtectedRoute>
               <Productos />
             </ProtectedRoute>
-          } 
+          }
         />
-
         <Route
-        path="/menu"
-        element={
-          <ProtectedRoute>
-            <MenuHoy />
-          </ProtectedRoute>
-        }
+          path="/estadisticas"
+          element={
+            <ProtectedRoute>
+              <Estadisticas />
+            </ProtectedRoute>
+          }
         />
-
         <Route
-        path="/ventas-anonimas"
-        element={
-          <ProtectedRoute>
-            <VentasAnonimas />
-          </ProtectedRoute>
-        }
+          path="/configuracion"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <Configuracion />
+            </ProtectedRoute>
+          }
         />
 
-        <Route
-        path="/estadisticas"
-        element={
-          <ProtectedRoute>
-            <Estadisticas />
-          </ProtectedRoute>
-        }
-        />
-
-        <Route
-        path="/configuracion-menu"
-        element={
-          <ProtectedRoute>
-            <ConfiguracionMenu />
-          </ProtectedRoute>
-        }
-        />
-
+        {/* Redirecciones de rutas antiguas */}
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
+        <Route path="/pedidos" element={<Navigate to="/" replace />} />
+        <Route path="/calendario" element={<Navigate to="/" replace />} />
+        <Route path="/menu" element={<Navigate to="/" replace />} />
+        <Route path="/cuenta" element={<Navigate to="/deudas" replace />} />
+        <Route path="/caja" element={<Navigate to="/" replace />} />
+        <Route path="/ventas-anonimas" element={<Navigate to="/" replace />} />
+        <Route path="/configuracion-menu" element={<Navigate to="/productos" replace />} />
       </Routes>
-
     </BrowserRouter>
-
   );
-
 }
-
 
 export default App;

@@ -57,22 +57,26 @@ export async function marcarPedidoPagado(req, res) {
   try {
     const { pedidoId, formaPago } = req.body;
 
+    const pedidoExistente = await prisma.pedido.findUnique({
+      where: { id: Number(pedidoId) },
+    });
+
+    if (!pedidoExistente || pedidoExistente.estadoPago === "PAGADO") {
+      return res.status(400).json({ error: "Pedido no válido o ya pagado" });
+    }
+
     const pedido = await prisma.pedido.update({
-      where: {
-        id: Number(pedidoId),
-      },
+      where: { id: Number(pedidoId) },
       data: {
         estadoPago: "PAGADO",
         pago: {
           create: {
-            monto: req.body.monto,
+            monto: pedidoExistente.total,
             forma: formaPago,
           },
         },
       },
-      include: {
-        cliente: true,
-      },
+      include: { cliente: true, pago: true },
     });
 
     // Actualizar saldo del cliente

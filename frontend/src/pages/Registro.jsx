@@ -42,7 +42,12 @@ export default function Registro() {
         state: { mensaje: "Registro exitoso. Por favor inicia sesión." }
       });
     } catch (error) {
-      setError(error.response?.data?.error || "Error al registrar usuario");
+      setError(
+        error.response?.data?.error ||
+        (error.request
+          ? "No se pudo conectar con el servidor. Verifica que el backend esté corriendo."
+          : "Error al registrar usuario")
+      );
     } finally {
       setLoading(false);
     }

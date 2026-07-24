@@ -8,9 +8,21 @@ export async function registrar(req, res) {
   try {
     const { email, password, nombre, rol } = req.body;
 
+    if (!email?.trim() || !password?.trim() || !nombre?.trim()) {
+      return res.status(400).json({
+        error: "Email, contraseña y nombre son obligatorios",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        error: "La contraseña debe tener al menos 6 caracteres",
+      });
+    }
+
     // Verificar si el usuario ya existe
     const usuarioExistente = await prisma.usuario.findUnique({
-      where: { email },
+      where: { email: email.trim().toLowerCase() },
     });
 
     if (usuarioExistente) {
@@ -26,9 +38,9 @@ export async function registrar(req, res) {
     // Crear usuario
     const usuario = await prisma.usuario.create({
       data: {
-        email,
+        email: email.trim().toLowerCase(),
         password: passwordHash,
-        nombre,
+        nombre: nombre.trim(),
         rol: rol || "EMPLEADO",
       },
     });
@@ -62,9 +74,15 @@ export async function login(req, res) {
   try {
     const { email, password } = req.body;
 
+    if (!email?.trim() || !password?.trim()) {
+      return res.status(400).json({
+        error: "Email y contraseña son obligatorios",
+      });
+    }
+
     // Buscar usuario
     const usuario = await prisma.usuario.findUnique({
-      where: { email },
+      where: { email: email.trim().toLowerCase() },
     });
 
     if (!usuario) {

@@ -1,49 +1,72 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+
+const navItems = [
+  { to: "/", label: "Operaciones", icon: "📅", end: true },
+  { to: "/deudas", label: "Deudas", icon: "💳" },
+  { to: "/clientes", label: "Clientes", icon: "👥" },
+  { to: "/productos", label: "Productos", icon: "🍽️" },
+  { to: "/estadisticas", label: "Estadísticas", icon: "📊" },
+  { to: "/configuracion", label: "Configuración", icon: "⚙️", admin: true },
+];
 
 export default function Sidebar() {
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    window.location.href = '/login';
-  };
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
 
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
+    window.location.href = "/login";
+  }
+
+  const links = navItems.filter(
+    (item) => !item.admin || usuario.rol === "ADMIN"
+  );
 
   return (
-    <aside className="w-64 bg-slate-900 text-white p-6 flex flex-col">
-      <h1 className="text-2xl font-bold mb-8">
-        Food Control
-      </h1>
+    <aside className="w-64 min-h-screen bg-[#0f172a] text-white flex flex-col shrink-0">
+      <div className="p-6 border-b border-slate-700/80">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-lg font-bold">
+            FC
+          </div>
+          <div>
+            <h1 className="text-lg font-bold leading-tight">Food Control</h1>
+            <p className="text-xs text-slate-400">Gestión diaria</p>
+          </div>
+        </div>
+      </div>
 
-      <nav className="flex flex-col gap-3 flex-1">
-        <Link to="/" className="hover:text-blue-300 transition">Dashboard</Link>
-        <Link to="/pedidos" className="hover:text-blue-300 transition">Pedidos</Link>
-        <Link to="/clientes" className="hover:text-blue-300 transition">Clientes</Link>
-
-        <Link to="/cuenta" className="hover:text-blue-300 transition">
-          Cuenta Corriente
-        </Link>
-
-        <Link to="/caja" className="hover:text-blue-300 transition">Caja</Link>
-        <Link to="/ventas-anonimas" className="hover:text-blue-300 transition">Ventas Anónimas</Link>
-        <Link to="/estadisticas" className="hover:text-blue-300 transition">Estadísticas</Link>
-        <Link to="/menu" className="hover:text-blue-300 transition">Menú de hoy</Link>
-        <Link to="/configuracion-menu" className="hover:text-blue-300 transition">Config. Menú</Link>
-        <Link to="/productos" className="hover:text-blue-300 transition">Productos</Link>
-        <Link to="/configuracion" className="hover:text-blue-300 transition">Configuración</Link>
+      <nav className="flex-1 p-4 space-y-1">
+        {links.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                isActive
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+              }`
+            }
+          >
+            <span>{item.icon}</span>
+            {item.label}
+          </NavLink>
+        ))}
       </nav>
 
-      <div className="mt-8 pt-6 border-t border-slate-700">
-        <div className="mb-4">
-          <p className="text-sm text-slate-400">Usuario:</p>
-          <p className="font-medium">{usuario.nombre || 'Usuario'}</p>
-          <p className="text-xs text-slate-500">{usuario.rol || 'EMPLEADO'}</p>
+      <div className="p-4 border-t border-slate-700/80">
+        <div className="px-3 py-2 mb-3">
+          <p className="text-xs text-slate-500 uppercase tracking-wide">Usuario</p>
+          <p className="font-medium text-sm mt-0.5">{usuario.nombre || "Usuario"}</p>
+          <p className="text-xs text-slate-400">{usuario.rol || "EMPLEADO"}</p>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition"
+          className="w-full fc-btn bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm"
         >
-          Cerrar Sesión
+          Cerrar sesión
         </button>
       </div>
     </aside>

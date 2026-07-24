@@ -1,47 +1,21 @@
 import { Router } from "express";
-
+import { authMiddleware } from "../middleware/auth.js";
 import {
-  obtenerMenuHoy,
+  obtenerMenu,
   copiarProductosFijos,
   agregarProductoMenu,
-  eliminarProductoMenu
+  agregarMontoLibreMenu,
+  eliminarProductoMenu,
+  listarMenusMes,
 } from "../controllers/menuController.js";
-import { authMiddleware } from "../middleware/auth.js";
-
 
 const router = Router();
 
-
-// Obtener menú del día
-router.get(
-  "/",
-  authMiddleware,
-  obtenerMenuHoy
-);
-
-
-// Copiar productos fijos al menú de hoy
-router.post(
-  "/copiar",
-  authMiddleware,
-  copiarProductosFijos
-);
-
-
-// Agregar un producto manualmente al menú
-router.post(
-  "/agregar",
-  authMiddleware,
-  agregarProductoMenu
-);
-
-
-// Quitar un producto del menú del día
-router.delete(
-  "/producto/:id",
-  authMiddleware,
-  eliminarProductoMenu
-);
-
+router.get("/", authMiddleware, obtenerMenu);
+router.get("/calendario", authMiddleware, listarMenusMes);
+router.post("/copiar", authMiddleware, copiarProductosFijos);
+router.post("/agregar", authMiddleware, agregarProductoMenu);
+router.post("/monto-libre", authMiddleware, agregarMontoLibreMenu);
+router.delete("/producto/:id", authMiddleware, eliminarProductoMenu);
 
 export default router;

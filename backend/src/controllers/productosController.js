@@ -27,15 +27,19 @@ export async function crearProducto(req, res) {
     const {
       nombre,
       precio,
-      esLibre = false
+      esLibre = false,
+      esFijo = false,
+      esEspecial = false,
     } = req.body;
 
     const producto = await prisma.producto.create({
       data: {
         nombre,
         precio: Number(precio),
-        esLibre
-      }
+        esLibre,
+        esFijo,
+        esEspecial,
+      },
     });
 
     res.status(201).json(producto);
@@ -57,15 +61,19 @@ export async function editarProducto(req, res) {
 
     const {
       nombre,
-      precio
+      precio,
+      esFijo,
+      esEspecial,
     } = req.body;
 
     const producto = await prisma.producto.update({
       where: { id },
       data: {
         nombre,
-        precio: Number(precio)
-      }
+        precio: Number(precio),
+        ...(esFijo !== undefined && { esFijo }),
+        ...(esEspecial !== undefined && { esEspecial }),
+      },
     });
 
     res.json(producto);

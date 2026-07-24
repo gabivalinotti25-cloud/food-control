@@ -45,10 +45,12 @@ export default function Dashboard() {
 
       ]);
 
+      console.log("DEUDAS:", deudasResponse.data);
+
 
       setDatos(dashboardResponse.data);
 
-      setDeudas(deudasResponse.data);
+      setDeudas(Array.isArray(deudasResponse.data) ? deudasResponse.data : []);
 
 
     } catch (error) {
