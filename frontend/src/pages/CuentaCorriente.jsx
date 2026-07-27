@@ -10,6 +10,10 @@ export default function CuentaCorriente() {
   const [montoPago, setMontoPago] = useState("");
   const [formaPago, setFormaPago] = useState("EFECTIVO");
 
+  const [mostrarModalPin, setMostrarModalPin] = useState(false);
+  const [movimientoAEliminar, setMovimientoAEliminar] = useState(null);
+  const [pinIngresado, setPinIngresado] = useState("");
+
   useEffect(() => {
     cargarClientes();
   }, []);
@@ -48,6 +52,35 @@ export default function CuentaCorriente() {
       await cargarClientes();
     } catch (error) {
       alert(error.response?.data?.error || "Error al registrar el pago");
+    }
+  }
+
+  function solicitarPinEliminar(movimiento) {
+    setMovimientoAEliminar(movimiento);
+    setPinIngresado("");
+    setMostrarModalPin(true);
+  }
+
+  async function eliminarMovimiento() {
+    if (!movimientoAEliminar) return;
+
+    try {
+      await api.delete("/pagos/movimiento", {
+        data: {
+          movimientoId: movimientoAEliminar.id,
+          pin: pinIngresado,
+        },
+      });
+
+      alert("Movimiento eliminado correctamente");
+      setMostrarModalPin(false);
+      setMovimientoAEliminar(null);
+      setPinIngresado("");
+
+      await verCuenta(clienteSeleccionado);
+      await cargarClientes();
+    } catch (error) {
+      alert(error.response?.data?.error || "Error al eliminar el movimiento");
     }
   }
 
@@ -169,6 +202,7 @@ export default function CuentaCorriente() {
                 <th className="p-3 text-left">Tipo</th>
                 <th className="p-3 text-left">Concepto</th>
                 <th className="p-3 text-left">Monto</th>
+                <th className="p-3 text-left">Acción</th>
               </tr>
             </thead>
 
@@ -177,7 +211,7 @@ export default function CuentaCorriente() {
               {movimientos.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="4"
+                    colSpan="5"
                     className="p-6 text-center text-gray-500"
                   >
                     Este cliente aún no tiene movimientos.
@@ -203,6 +237,15 @@ export default function CuentaCorriente() {
                       Gs. {formatoGs(mov.monto)}
                     </td>
 
+                    <td className="p-3">
+                      <button
+                        onClick={() => solicitarPinEliminar(mov)}
+                        className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+
                   </tr>
                 ))
               )}
@@ -210,6 +253,41 @@ export default function CuentaCorriente() {
             </tbody>
           </table>
 
+        </div>
+      )}
+
+      {mostrarModalPin && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96">
+            <h3 className="text-xl font-bold mb-4">
+              Ingrese PIN para eliminar
+            </h3>
+            <input
+              type="password"
+              className="border rounded p-2 w-full mb-4"
+              placeholder="Ingrese PIN"
+              value={pinIngresado}
+              onChange={(e) => setPinIngresado(e.target.value)}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setMostrarModalPin(false);
+                  setMovimientoAEliminar(null);
+                  setPinIngresado("");
+                }}
+                className="bg-gray-300 px-4 py-2 rounded"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={eliminarMovimiento}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
