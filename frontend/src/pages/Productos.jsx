@@ -56,6 +56,16 @@ export default function Productos() {
     cargarProductos();
   }
 
+  async function eliminarProducto(id) {
+    if (!confirm("¿Estás seguro de que quieres eliminar este producto?")) return;
+    try {
+      await api.delete(`/productos/${id}`);
+      cargarProductos();
+    } catch (error) {
+      alert(error.response?.data?.error || "Error al eliminar producto");
+    }
+  }
+
   const filtrados = productos.filter((p) =>
     p.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -178,6 +188,12 @@ export default function Productos() {
                             className="fc-btn fc-btn-danger text-xs"
                           >
                             {producto.activo ? "Desactivar" : "Activar"}
+                          </button>
+                          <button
+                            onClick={() => eliminarProducto(producto.id)}
+                            className="fc-btn fc-btn-danger text-xs"
+                          >
+                            Eliminar
                           </button>
                         </td>
                       </tr>

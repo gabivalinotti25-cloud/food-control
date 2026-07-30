@@ -29,6 +29,16 @@ export default function Clientes() {
     cargarClientes();
   }
 
+  async function eliminarCliente(id) {
+    if (!confirm("¿Estás seguro de que quieres eliminar este cliente?")) return;
+    try {
+      await api.delete(`/clientes/${id}`);
+      cargarClientes();
+    } catch (error) {
+      alert(error.response?.data?.error || "Error al eliminar cliente");
+    }
+  }
+
   const filtrados = clientes.filter(
     (c) =>
       c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -103,6 +113,7 @@ export default function Clientes() {
                 <th className="px-5 py-3 font-semibold">Teléfono</th>
                 <th className="px-5 py-3 font-semibold">Dirección</th>
                 <th className="px-5 py-3 font-semibold text-right">Saldo</th>
+                <th className="px-5 py-3 font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -117,6 +128,14 @@ export default function Clientes() {
                     ) : (
                       <span className="text-emerald-600">Al día</span>
                     )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <button
+                      onClick={() => eliminarCliente(c.id)}
+                      className="fc-btn fc-btn-danger text-xs"
+                    >
+                      Eliminar
+                    </button>
                   </td>
                 </tr>
               ))}

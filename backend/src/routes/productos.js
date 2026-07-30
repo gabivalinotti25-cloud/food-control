@@ -4,7 +4,8 @@ import {
   listarProductos,
   crearProducto,
   editarProducto,
-  cambiarEstadoProducto
+  cambiarEstadoProducto,
+  eliminarProducto
 } from "../controllers/productosController.js";
 import { authMiddleware } from "../middleware/auth.js";
 
@@ -17,5 +18,7 @@ router.post("/", authMiddleware, crearProducto);
 router.put("/:id", authMiddleware, editarProducto);
 
 router.patch("/:id/estado", authMiddleware, cambiarEstadoProducto);
+
+router.delete("/:id", authMiddleware, eliminarProducto);
 
 export default router;
