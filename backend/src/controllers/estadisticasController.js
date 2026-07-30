@@ -93,10 +93,10 @@ export async function obtenerVentasPorPeriodo(req, res) {
     });
 
     const ventasEfectivo = pedidos.filter(
-      (p) => p.pago?.formaPago === "EFECTIVO"
+      (p) => p.pago?.forma === "EFECTIVO"
     );
     const ventasTransferencia = pedidos.filter(
-      (p) => p.pago?.formaPago === "TRANSFERENCIA"
+      (p) => p.pago?.forma === "TRANSFERENCIA"
     );
     const ventasPendientes = pedidos.filter((p) => p.estadoPago === "PENDIENTE");
 
@@ -202,7 +202,7 @@ export async function obtenerProductosMasVendidos(req, res) {
       }
       ventasPorProducto[detalle.productoId].cantidadTotal +=
         detalle.cantidad;
-      ventasPorProducto[detalle.productoId].montoTotal += detalle.subtotal;
+      ventasPorProducto[detalle.productoId].montoTotal += detalle.precioUnitario * detalle.cantidad;
     });
 
     const ordenado = Object.values(ventasPorProducto).sort(
@@ -332,7 +332,7 @@ export async function obtenerReporteDiario(req, res) {
           };
         }
         productosVendidos[detalle.productoId].cantidad += detalle.cantidad;
-        productosVendidos[detalle.productoId].monto += detalle.subtotal;
+        productosVendidos[detalle.productoId].monto += detalle.precioUnitario * detalle.cantidad;
       });
     });
 
