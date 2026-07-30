@@ -139,7 +139,7 @@ export default function OperacionesDia() {
   }
 
   async function eliminarPedido(id) {
-    if (!confirm("¿Eliminar este registro?")) return;
+    if (!confirm("⚠️ ATENCIÓN: Esto eliminará el registro y TODOS sus datos asociados (pagos, detalles, movimientos de cuenta). ¿Estás seguro de que quieres continuar?")) return;
     await api.delete(`/pedidos/${id}`);
     cargarTodo();
   }

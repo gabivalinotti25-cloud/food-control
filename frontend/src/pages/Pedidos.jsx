@@ -47,6 +47,16 @@ export default function Pedidos() {
     cargarPedidos();
   }
 
+  async function eliminarPedido(id) {
+    if (!confirm("⚠️ ATENCIÓN: Esto eliminará el pedido y TODOS sus datos asociados (pagos, detalles, movimientos de cuenta). ¿Estás seguro de que quieres continuar?")) return;
+    try {
+      await api.delete(`/pedidos/${id}`);
+      cargarPedidos();
+    } catch (error) {
+      alert(error.response?.data?.error || "Error al eliminar pedido");
+    }
+  }
+
   return (
     <MainLayout>
       <h1 className="text-3xl font-bold mb-6">
@@ -160,6 +170,7 @@ export default function Pedidos() {
               <th className="p-3 text-left">Total</th>
               <th className="p-3 text-left">Estado</th>
               <th className="p-3 text-left">Forma de pago</th>
+              <th className="p-3 text-left">Acciones</th>
             </tr>
           </thead>
 
@@ -167,7 +178,7 @@ export default function Pedidos() {
             {pedidos.length === 0 ? (
               <tr>
                 <td
-                  colSpan="4"
+                  colSpan="5"
                   className="p-4 text-center text-gray-500"
                 >
                   No hay pedidos registrados.
@@ -197,6 +208,15 @@ export default function Pedidos() {
                     {pedido.pago
                       ? pedido.pago.forma
                       : "-"}
+                  </td>
+
+                  <td className="p-3">
+                    <button
+                      onClick={() => eliminarPedido(pedido.id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                    >
+	                    Eliminar
+                    </button>
                   </td>
                 </tr>
               ))

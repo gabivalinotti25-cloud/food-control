@@ -53,7 +53,7 @@ export default function VentasAnonimas() {
   }
 
   async function eliminarVenta(id) {
-    if (!confirm("¿Eliminar esta venta?")) return;
+    if (!confirm("⚠️ ATENCIÓN: ¿Estás seguro de que quieres eliminar esta venta anónima?")) return;
     try {
       await api.delete(`/ventas-anonimas/${id}`);
       cargarVentasHoy();
