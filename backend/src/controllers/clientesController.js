@@ -43,31 +43,58 @@ export async function eliminarCliente(req, res) {
   try {
     const id = Number(req.params.id);
 
-    // Verificar si el cliente tiene pedidos
-    const clienteConPedidos = await prisma.cliente.findUnique({
+    // Verificar si el cliente existe
+    const cliente = await prisma.cliente.findUnique({
       where: { id },
       include: {
-        _count: {
-          select: { pedidos: true },
+        pedidos: {
+          include: {
+            pago: true,
+            detalles: true,
+          },
+        },
+        movimientos: true,
+      },
+    });
+
+    if (!cliente) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    // Eliminar movimientos de cuenta
+    await prisma.movimientoCuenta.deleteMany({
+      where: { clienteId: id },
+    });
+
+    // Eliminar pagos de los pedidos
+    await prisma.pago.deleteMany({
+      where: {
+        pedido: {
+          clienteId: id,
         },
       },
     });
 
-    if (!clienteConPedidos) {
-      return res.status(404).json({ error: "Cliente no encontrado" });
-    }
+    // Eliminar detalles de pedidos
+    await prisma.pedidoDetalle.deleteMany({
+      where: {
+        pedido: {
+          clienteId: id,
+        },
+      },
+    });
 
-    if (clienteConPedidos._count.pedidos > 0) {
-      return res.status(400).json({ 
-        error: "No se puede eliminar el cliente porque tiene pedidos asociados" 
-      });
-    }
+    // Eliminar pedidos
+    await prisma.pedido.deleteMany({
+      where: { clienteId: id },
+    });
 
+    // Eliminar cliente
     await prisma.cliente.delete({
       where: { id },
     });
 
-    res.json({ mensaje: "Cliente eliminado correctamente" });
+    res.json({ mensaje: "Cliente y todos sus registros asociados eliminados correctamente" });
   } catch (error) {
     console.error(error);
     res.status(500).json({

@@ -127,40 +127,59 @@ export async function eliminarProducto(req, res) {
   try {
     const id = Number(req.params.id);
 
-    // Verificar si el producto está en menús o pedidos
-    const productoConReferencias = await prisma.producto.findUnique({
+    // Verificar si el producto existe
+    const producto = await prisma.producto.findUnique({
       where: { id },
       include: {
-        _count: {
-          select: { 
-            detallesPedido: true,
-            menus: true,
-            menusDiarios: true
-          },
+        detallesPedido: true,
+        menus: true,
+        menusDiarios: true,
+      },
+    });
+
+    if (!producto) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
+    // Eliminar de menús de plantilla
+    await prisma.menuPlantillaDetalle.deleteMany({
+      where: { productoId: id },
+    });
+
+    // Eliminar menús de plantilla vacíos
+    await prisma.menuPlantilla.deleteMany({
+      where: {
+        productos: {
+          none: {},
         },
       },
     });
 
-    if (!productoConReferencias) {
-      return res.status(404).json({ error: "Producto no encontrado" });
-    }
+    // Eliminar de menús diarios
+    await prisma.menuDiarioDetalle.deleteMany({
+      where: { productoId: id },
+    });
 
-    const totalReferencias = 
-      productoConReferencias._count.detallesPedido +
-      productoConReferencias._count.menus +
-      productoConReferencias._count.menusDiarios;
+    // Eliminar menús diarios vacíos
+    await prisma.menuDiario.deleteMany({
+      where: {
+        productos: {
+          none: {},
+        },
+      },
+    });
 
-    if (totalReferencias > 0) {
-      return res.status(400).json({ 
-        error: "No se puede eliminar el producto porque está asociado a menús o pedidos" 
-      });
-    }
+    // Eliminar detalles de pedidos que contienen este producto
+    await prisma.pedidoDetalle.deleteMany({
+      where: { productoId: id },
+    });
 
+    // Eliminar producto
     await prisma.producto.delete({
       where: { id },
     });
 
-    res.json({ mensaje: "Producto eliminado correctamente" });
+    res.json({ mensaje: "Producto y todas sus referencias eliminadas correctamente" });
   } catch (error) {
     console.error(error);
     res.status(500).json({

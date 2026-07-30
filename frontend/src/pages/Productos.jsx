@@ -57,7 +57,7 @@ export default function Productos() {
   }
 
   async function eliminarProducto(id) {
-    if (!confirm("¿Estás seguro de que quieres eliminar este producto?")) return;
+    if (!confirm("⚠️ ATENCIÓN: Esto eliminará el producto y TODAS sus referencias (menús, detalles de pedidos). ¿Estás seguro de que quieres continuar?")) return;
     try {
       await api.delete(`/productos/${id}`);
       cargarProductos();

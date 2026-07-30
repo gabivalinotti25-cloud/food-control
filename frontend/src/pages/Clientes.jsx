@@ -30,7 +30,7 @@ export default function Clientes() {
   }
 
   async function eliminarCliente(id) {
-    if (!confirm("¿Estás seguro de que quieres eliminar este cliente?")) return;
+    if (!confirm("⚠️ ATENCIÓN: Esto eliminará el cliente y TODOS sus registros asociados (pedidos, pagos, movimientos de cuenta). ¿Estás seguro de que quieres continuar?")) return;
     try {
       await api.delete(`/clientes/${id}`);
       cargarClientes();
