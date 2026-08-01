@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import CalendarStrip, { ResumenDiaCards, BadgePago } from "../components/CalendarStrip";
 import api from "../services/api";
@@ -208,11 +208,20 @@ export default function OperacionesDia() {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Operaciones del día</h1>
-          <p className="text-slate-500 mt-1">
-            Registros, menú y cobros organizados por fecha
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Operaciones del día</h1>
+            <p className="text-slate-500 mt-1">
+              Registros, menú y cobros organizados por fecha
+            </p>
+          </div>
+          <Link 
+            to="/sebastian"
+            className="flex items-center gap-2 bg-gradient-to-r from-gray-800 to-gray-900 text-white px-4 py-2 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all font-serif border border-gray-700 shadow-lg"
+          >
+            <span className="text-xl">🎩</span>
+            <span>Sebastian</span>
+          </Link>
         </div>
 
         <CalendarStrip
