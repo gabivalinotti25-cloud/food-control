@@ -19,6 +19,7 @@ import backupRoutes from "./routes/backup.js";
 import authRoutes from "./routes/auth.js";
 import diaRoutes from "./routes/dia.js";
 import sebastianRoutes from "./routes/sebastian.js";
+import notificacionesRoutes from "./routes/notificaciones.js";
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use("/configuracion-menu", configuracionMenuRoutes);
 app.use("/estadisticas", estadisticasRoutes);
 app.use("/backup", backupRoutes);
 app.use("/sebastian", sebastianRoutes);
+app.use("/notificaciones", notificacionesRoutes);
 
 const PORT = process.env.PORT || 3000;
 

@@ -1,8 +1,7 @@
 import prisma from "../prisma.js";
-import { Ollama } from "ollama";
+import ollama from "ollama";
 import twilio from "twilio";
-
-const ollama = new Ollama({ host: 'http://localhost:11434' });
+import { notificar } from "./notificacionesController.js";
 
 // Configuración de Twilio (solo si están configuradas las credenciales válidas)
 let twilioClient = null;
@@ -143,7 +142,7 @@ export async function procesarMensaje(req, res) {
     const propuesta = await prisma.propuestaSebastian.create({
       data: {
         mensajeOriginal: mensaje,
-        origen,
+        origen: origen,
         accion: resultado.accion,
         descripcion: resultado.descripcion,
         datos: resultado.datos,
@@ -154,6 +153,15 @@ export async function procesarMensaje(req, res) {
     });
     
     console.log(`✅ Propuesta creada ID: ${propuesta.id}`);
+    
+    // Crear notificación
+    await notificar(
+      'SEBASTIAN_PROPUESTA',
+      '🎩 Nueva propuesta de Sebastian',
+      `Sebastian ha creado una propuesta: ${resultado.descripcion}`,
+      '/sebastian',
+      { propuestaId: propuesta.id, accion: resultado.accion }
+    );
     
     res.json({
       propuestaId: propuesta.id,
@@ -218,6 +226,15 @@ export async function webhookWhatsApp(req, res) {
     });
     
     console.log(`✅ Propuesta WhatsApp creada ID: ${propuesta.id}`);
+    
+    // Crear notificación
+    await notificar(
+      'SEBASTIAN_PROPUESTA',
+      '🎩 Nueva propuesta de Sebastian',
+      `Sebastian ha creado una propuesta: ${resultado.descripcion}`,
+      '/sebastian',
+      { propuestaId: propuesta.id, accion: resultado.accion }
+    );
     
     // Sebastian solo lee y procesa mensajes, no responde por WhatsApp
     // Las propuestas se gestionan desde la interfaz web
