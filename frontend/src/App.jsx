@@ -7,6 +7,7 @@ import Productos from "./pages/Productos";
 import Estadisticas from "./pages/Estadisticas";
 import Configuracion from "./pages/Configuracion";
 import Sebastian from "./pages/Sebastian";
+import HistorialSebastian from "./pages/HistorialSebastian";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -79,6 +80,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Sebastian />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/historial-sebastian"
+          element={
+            <ProtectedRoute>
+              <HistorialSebastian />
             </ProtectedRoute>
           }
         />

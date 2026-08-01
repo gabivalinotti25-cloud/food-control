@@ -154,6 +154,21 @@ export async function procesarMensaje(req, res) {
     
     console.log(`✅ Propuesta creada ID: ${propuesta.id}`);
     
+    // Guardar en historial de conversaciones
+    await prisma.historialConversacion.create({
+      data: {
+        origen: origen,
+        mensajeUsuario: mensaje,
+        respuestaIA: response.message.content,
+        accionPropuesta: resultado.accion,
+        datosPropuesta: resultado.datos,
+        confianza: resultado.confianza,
+        aprobado: null
+      }
+    });
+    
+    console.log(`✅ Conversación guardada en historial`);
+    
     // Crear notificación
     await notificar(
       'SEBASTIAN_PROPUESTA',
@@ -358,6 +373,18 @@ export async function aprobarPropuesta(req, res) {
       }
     });
     
+    // Actualizar historial de conversaciones
+    await prisma.historialConversacion.updateMany({
+      where: {
+        accionPropuesta: propuesta.accion,
+        datosPropuesta: propuesta.datos,
+        aprobado: null
+      },
+      data: {
+        aprobado: true
+      }
+    });
+    
     res.json({ 
       mensaje: 'Propuesta ejecutada exitosamente',
       resultado 
@@ -374,6 +401,10 @@ export async function rechazarPropuesta(req, res) {
     const { id } = req.params;
     const { motivo } = req.body;
     
+    const propuesta = await prisma.propuestaSebastian.findUnique({
+      where: { id: Number(id) }
+    });
+    
     await prisma.propuestaSebastian.update({
       where: { id: Number(id) },
       data: {
@@ -381,6 +412,20 @@ export async function rechazarPropuesta(req, res) {
         motivoRechazo: motivo
       }
     });
+    
+    // Actualizar historial de conversaciones
+    if (propuesta) {
+      await prisma.historialConversacion.updateMany({
+        where: {
+          accionPropuesta: propuesta.accion,
+          datosPropuesta: propuesta.datos,
+          aprobado: null
+        },
+        data: {
+          aprobado: false
+        }
+      });
+    }
     
     res.json({ mensaje: 'Propuesta rechazada' });
   } catch (error) {

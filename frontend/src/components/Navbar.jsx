@@ -35,6 +35,11 @@ export default function Navbar() {
             <span>Sebastian</span>
           </Link>
           
+          <Link to="/historial-sebastian" className="hover:bg-gray-700 px-3 py-2 rounded transition-all font-serif flex items-center gap-2">
+            <span>📜</span>
+            <span>Historial</span>
+          </Link>
+          
           <div className="relative">
             <button
               onClick={() => setMostrarNotificaciones(!mostrarNotificaciones)}

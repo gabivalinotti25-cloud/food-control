@@ -269,3 +269,18 @@ model Notificacion {
   datos       Json?    // Datos adicionales relacionados
   createdAt   DateTime @default(now())
 }
+
+model HistorialConversacion {
+  id              Int      @id @default(autoincrement())
+  origen          String   // WEB, WHATSAPP
+  mensajeUsuario  String
+  respuestaIA     String
+  accionPropuesta String?  // Acción que Sebastian propuso
+  datosPropuesta  Json?    // Datos de la propuesta
+  aprobado        Boolean? // null = pendiente, true = aprobado, false = rechazado
+  confianza       Float?   // Nivel de confianza de Sebastian (0-1)
+  createdAt       DateTime @default(now())
+  
+  @@index([origen])
+  @@index([createdAt])
+}
