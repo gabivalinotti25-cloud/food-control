@@ -9,7 +9,7 @@ export default function Navbar() {
           <h1 className="text-2xl font-serif font-bold tracking-wide">Food Control</h1>
         </div>
         <div className="flex gap-4 items-center">
-          <Link to="/sebastian" className="hover:bg-gray-700 px-3 py-2 rounded transition-all font-serif flex items-center gap-2">
+          <Link to="/sebastian" target="_blank" rel="noopener noreferrer" className="hover:bg-gray-700 px-3 py-2 rounded transition-all font-serif flex items-center gap-2">
             <span>🎩</span>
             <span>Sebastian</span>
           </Link>

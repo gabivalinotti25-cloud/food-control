@@ -217,6 +217,8 @@ export default function OperacionesDia() {
           </div>
           <Link 
             to="/sebastian"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-2 bg-gradient-to-r from-gray-800 to-gray-900 text-white px-4 py-2 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all font-serif border border-gray-700 shadow-lg"
           >
             <span className="text-xl">🎩</span>
