@@ -142,3 +142,75 @@ export async function obtenerResumenDeudas(req, res) {
     });
   }
 }
+
+export async function generarInformeCliente(req, res) {
+  try {
+    const { clienteId } = req.params;
+
+    const cliente = await prisma.cliente.findUnique({
+      where: { id: Number(clienteId) },
+      include: {
+        pedidos: {
+          where: { estadoPago: "PENDIENTE" },
+          include: {
+            detalles: {
+              include: {
+                producto: true,
+              },
+            },
+          },
+          orderBy: { fecha: "desc" },
+        },
+      },
+    });
+
+    if (!cliente) {
+      return res.status(404).json({ error: "Cliente no encontrado" });
+    }
+
+    // Generar informe en formato texto
+    let informe = `📋 INFORME DE DEUDA - ${cliente.nombre.toUpperCase()}\n`;
+    informe += `📱 Teléfono: ${cliente.telefono}\n`;
+    informe += `💰 Total adeudado: Gs. ${cliente.saldo.toLocaleString()}\n`;
+    informe += `📅 Fecha: ${new Date().toLocaleDateString()}\n\n`;
+    informe += `═══════════════════════════════════════════\n\n`;
+    informe += `📦 PEDIDOS PENDIENTES:\n\n`;
+
+    if (cliente.pedidos.length === 0) {
+      informe += `✅ No hay pedidos pendientes de pago\n`;
+    } else {
+      cliente.pedidos.forEach((pedido, index) => {
+        informe += `${index + 1}. Pedido #${pedido.id}\n`;
+        informe += `   📅 Fecha: ${new Date(pedido.fecha).toLocaleDateString()}\n`;
+        informe += `   💵 Total: Gs. ${pedido.total.toLocaleString()}\n`;
+        informe += `   📝 Detalles:\n`;
+        
+        pedido.detalles.forEach((detalle) => {
+          const nombreProducto = detalle.producto?.nombre || detalle.descripcion || "Sin nombre";
+          informe += `      • ${nombreProducto} x${detalle.cantidad} = Gs. ${detalle.precioUnitario.toLocaleString()}\n`;
+        });
+        
+        informe += `\n`;
+      });
+    }
+
+    informe += `═══════════════════════════════════════════\n`;
+    informe += `💳 FORMAS DE PAGO ACEPTADAS:\n`;
+    informe += `   • Efectivo\n`;
+    informe += `   • Transferencia bancaria\n\n`;
+    informe += `🙏 Por favor, regularizar su deuda a la brevedad posible.\n`;
+    informe += `📞 Para consultas, contactar al negocio.\n`;
+
+    res.json({
+      cliente: cliente.nombre,
+      telefono: cliente.telefono,
+      totalDeuda: cliente.saldo,
+      informe,
+      cantidadPedidos: cliente.pedidos.length,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al generar informe del cliente" });
+  }
+}

@@ -12,6 +12,8 @@ export default function Deudas() {
   const [loading, setLoading] = useState(true);
   const [montoPago, setMontoPago] = useState("");
   const [formaPago, setFormaPago] = useState("EFECTIVO");
+  const [informe, setInforme] = useState(null);
+  const [mostrarInforme, setMostrarInforme] = useState(false);
 
   useEffect(() => {
     cargarResumen();
@@ -73,6 +75,28 @@ export default function Deudas() {
     } catch (e) {
       alert(e.response?.data?.error || "Error al marcar como pagado");
     }
+  }
+
+  async function generarInforme() {
+    if (!clienteSel) return;
+    
+    try {
+      const { data } = await api.get(`/deudas/informe/${clienteSel.id}`);
+      setInforme(data.informe);
+      setMostrarInforme(true);
+    } catch (e) {
+      alert(e.response?.data?.error || "Error al generar informe");
+    }
+  }
+
+  function copiarInforme() {
+    if (!informe) return;
+    
+    navigator.clipboard.writeText(informe).then(() => {
+      alert("Informe copiado al portapapeles");
+    }).catch(() => {
+      alert("Error al copiar informe");
+    });
   }
 
   const clientes = resumen?.clientes || [];
@@ -174,6 +198,15 @@ export default function Deudas() {
                         Gs. {formatoGs(cuenta?.saldo ?? clienteSel.saldo)}
                       </p>
                     </div>
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={generarInforme}
+                      className="fc-btn fc-btn-secondary text-sm"
+                    >
+                      📋 Generar informe
+                    </button>
                   </div>
 
                   <form onSubmit={registrarPago} className="mt-5 pt-5 border-t flex flex-wrap gap-3 items-end">
@@ -283,6 +316,42 @@ export default function Deudas() {
           </div>
         </div>
       </div>
+
+      {/* Modal para mostrar informe */}
+      {mostrarInforme && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-lg">📋 Informe de Deuda</h3>
+              <button
+                onClick={() => setMostrarInforme(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              <pre className="whitespace-pre-wrap text-sm font-mono bg-gray-50 p-4 rounded">
+                {informe}
+              </pre>
+            </div>
+            <div className="p-4 border-t flex gap-2 justify-end bg-gray-50">
+              <button
+                onClick={copiarInforme}
+                className="fc-btn fc-btn-primary"
+              >
+                📋 Copiar al portapapeles
+              </button>
+              <button
+                onClick={() => setMostrarInforme(false)}
+                className="fc-btn fc-btn-secondary"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }
