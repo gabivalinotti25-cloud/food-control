@@ -238,3 +238,22 @@ model ConfiguracionMenu {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+
+model PropuestaSebastian {
+  id              Int      @id @default(autoincrement())
+  mensajeOriginal String
+  origen          String
+  accion          String
+  descripcion     String
+  datos           Json
+  confianza       Float
+  estado          String   @default("PENDIENTE") // PENDIENTE, APROBADA, RECHAZADA
+  respuestaIA     String?
+  datosEjecutados Json?
+  resultado       Json?
+  motivoRechazo   String?
+  ejecutadaAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

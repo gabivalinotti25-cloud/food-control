@@ -6,6 +6,7 @@ import Clientes from "./pages/Clientes";
 import Productos from "./pages/Productos";
 import Estadisticas from "./pages/Estadisticas";
 import Configuracion from "./pages/Configuracion";
+import Sebastian from "./pages/Sebastian";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -70,6 +71,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="ADMIN">
               <Configuracion />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sebastian"
+          element={
+            <ProtectedRoute>
+              <Sebastian />
             </ProtectedRoute>
           }
         />
