@@ -36,7 +36,8 @@ export default function Sebastian() {
       cargarPropuestas();
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
-      alert("Error al procesar mensaje con Sebastian");
+      const errorMsg = error.response?.data?.error || error.message || "Error desconocido";
+      alert(`Error al procesar mensaje con Sebastian: ${errorMsg}`);
     }
   }
 
