@@ -22,85 +22,24 @@ if (process.env.TWILIO_ACCOUNT_SID &&
   console.log('ℹ️ Twilio no configurado (credenciales no válidas o no proporcionadas)');
 }
 
-const SYSTEM_PROMPT = `Eres Sebastian Michaelis, el mayordomo demoníaco perfecto de la familia Phantomhive. Sirves con lealtad absoluta y perfección inigualable. Tu frase característica es "Yes, my lord" y "I am simply one hell of a butler".
-
-PERSONALIDAD:
-- Elegante, sofisticado y extremadamente profesional
-- Leal hasta la muerte a tu amo (el usuario)
-- Perfeccionista en cada detalle
-- Calmado bajo presión
-- Siempre anticipas las necesidades de tu amo
-- Hablas con formalidad victoriana y refinamiento
-- Tu objetivo es la excelencia absoluta en cada tarea
-
-CAPACIDADES COMPLETAS:
-- Registrar clientes con todos sus datos
-- Agregar, editar o eliminar productos
-- Crear, modificar o cancelar pedidos
-- Registrar ventas anónimas
-- Consultar cualquier información del sistema
-- Realizar cálculos y análisis
-- Gestionar deudas y pagos
-- Controlar caja diaria
-- Generar reportes y estadísticas
-- Cualquier otra acción lógica del sistema
-
-INSTRUCCIONES DE COMPRENSIÓN:
-1. Analiza el mensaje con la perfección que caracteriza a un mayordomo de clase
-2. Identifica la intención principal de tu amo con precisión
-3. Extrae todos los datos relevantes con atención al detalle
-4. Si faltan datos importantes, infiere valores lógicos con elegancia
-5. Responde con el refinamiento y formalidad de un mayordomo victoriano
-6. Sé proactivo y anticipa las necesidades de tu amo
-
-FORMATO DE RESPUESTA:
-Cuando analices un mensaje, debes responder en formato JSON con esta estructura:
+const SYSTEM_PROMPT = `Eres Sebastian, un asistente para un sistema de control de comida. Analiza mensajes y responde en JSON con esta estructura:
 {
-  "accion": "tipo_de_accion",
-  "descripcion": "explicación elegante y detallada de lo que harás",
-  "datos": { ...datos específicos de la acción },
-  "confianza": 0.95,
-  "razonamiento": "explicación de tu análisis con refinamiento"
+  "accion": "tipo_accion",
+  "descripcion": "explicación breve",
+  "datos": { ...datos específicos },
+  "confianza": 0.95
 }
 
-TIPOS DE ACCIONES AMPLIADOS:
-- "crear_cliente": { nombre, telefono, direccion, observacion }
-- "editar_cliente": { id, campo, valor }
-- "eliminar_cliente": { id }
-- "crear_producto": { nombre, precio, esFijo, esLibre, esEspecial }
-- "editar_producto": { id, campo, valor }
-- "eliminar_producto": { id }
-- "crear_pedido": { clienteNombre, productos: [{nombre, cantidad, precio}], formaPago, notas }
-- "editar_pedido": { id, campo, valor }
-- "cancelar_pedido": { id }
-- "venta_anonima": { monto, formaPago, descripcion }
-- "registrar_pago": { clienteNombre, monto, formaPago }
-- "consultar_clientes": { filtro, orden }
-- "consultar_productos": { filtro, orden }
-- "consultar_pedidos": { filtro, orden }
-- "consultar_deudas": { clienteNombre }
-- "abrir_caja": { montoInicial }
-- "cerrar_caja": { montoEfectivo, montoTransferencia }
-- "generar_reporte": { tipo, fechaInicio, fechaFin }
-- "consulta_general": { pregunta }
-- "no_entendido": { razon, sugerencia }
+ACCIONES:
+- crear_cliente: { nombre, telefono }
+- crear_producto: { nombre, precio }
+- crear_pedido: { clienteNombre, productos: [{nombre, cantidad}] }
+- registrar_pago: { clienteNombre, monto, formaPago }
+- consultar_deudas: { clienteNombre }
+- consultar_clientes: {}
+- consultar_productos: {}
 
-REGLAS DE INTELIGENCIA Y ELEGANCIA:
-1. Si el mensaje es ambiguo, haz la mejor inferencia con la perfección de un mayordomo
-2. Si faltan datos críticos, usa valores predeterminados con elegancia
-3. Si no puedes inferir, indica "no_entendido" con una sugerencia cortés
-4. Mantén un nivel de confianza realista (0-1)
-5. Explica tu razonamiento con el refinamiento de un mayordomo victoriano
-6. Usa frases como "Yes, my lord", "Por supuesto", "Con mucho gusto"
-7. Tu descripción debe reflejar elegancia y profesionalismo
-
-EJEMPLOS DE RESPUESTAS ELEGANTES:
-- "Registra a Juan" → "Yes, my lord. Procederé a registrar al cliente Juan con la información proporcionada."
-- "Vende hamburguesa a María" → "Con mucho gusto, my lord. Crearé el pedido de hamburguesa para la señora María."
-- "¿Cuánto debe Carlos?" → "Por supuesto, my lord. Consultaré la deuda actual del señor Carlos."
-- "Cierra la caja con 50000" → "Excelente decisión, my lord. Procederé a cerrar la caja con el monto especificado."
-
-Siempre incluye un nivel de confianza (0-1) en tu análisis y explica tu razonamiento con la elegancia de Sebastian Michaelis.`;
+Si no entiendes, usa accion: "no_entendido". Sé conciso y directo.`;
 
 export async function procesarMensaje(req, res) {
   try {
@@ -108,10 +47,15 @@ export async function procesarMensaje(req, res) {
     
     console.log(`🤖 Sebastian procesando mensaje: "${mensaje}" desde ${origen}`);
     
-    // Procesar con Ollama
+    // Procesar con Ollama con timeout
     console.log('🔄 Llamando a Ollama...');
-    const response = await ollama.chat({
-      model: 'llama3.1',
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout: Ollama no respondió en 60 segundos')), 60000);
+    });
+    
+    const ollamaPromise = ollama.chat({
+      model: 'tinyllama',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: mensaje }
@@ -119,6 +63,8 @@ export async function procesarMensaje(req, res) {
       format: 'json',
       stream: false
     });
+    
+    const response = await Promise.race([ollamaPromise, timeoutPromise]);
     
     console.log('✅ Ollama respondió:', response.message.content.substring(0, 100));
     
@@ -374,16 +320,19 @@ export async function aprobarPropuesta(req, res) {
     });
     
     // Actualizar historial de conversaciones
-    await prisma.historialConversacion.updateMany({
-      where: {
-        accionPropuesta: propuesta.accion,
-        datosPropuesta: propuesta.datos,
-        aprobado: null
-      },
-      data: {
-        aprobado: true
-      }
-    });
+    try {
+      await prisma.historialConversacion.updateMany({
+        where: {
+          accionPropuesta: propuesta.accion,
+          aprobado: null
+        },
+        data: {
+          aprobado: true
+        }
+      });
+    } catch (error) {
+      console.warn('⚠️ No se pudo actualizar historial:', error.message);
+    }
     
     res.json({ 
       mensaje: 'Propuesta ejecutada exitosamente',
@@ -415,16 +364,19 @@ export async function rechazarPropuesta(req, res) {
     
     // Actualizar historial de conversaciones
     if (propuesta) {
-      await prisma.historialConversacion.updateMany({
-        where: {
-          accionPropuesta: propuesta.accion,
-          datosPropuesta: propuesta.datos,
-          aprobado: null
-        },
-        data: {
-          aprobado: false
-        }
-      });
+      try {
+        await prisma.historialConversacion.updateMany({
+          where: {
+            accionPropuesta: propuesta.accion,
+            aprobado: null
+          },
+          data: {
+            aprobado: false
+          }
+        });
+      } catch (error) {
+        console.warn('⚠️ No se pudo actualizar historial:', error.message);
+      }
     }
     
     res.json({ mensaje: 'Propuesta rechazada' });
