@@ -1,0 +1,5 @@
+[providers]
+runtime = "nodejs-20"
+
+[env]
+NODE_VERSION = "20"
