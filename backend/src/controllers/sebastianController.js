@@ -92,12 +92,23 @@ export async function procesarMensaje(req, res) {
         console.log('✅ Groq respondió:', response.message.content.substring(0, 100));
       } catch (error) {
         console.error('❌ Error con Groq, intentando Ollama:', error.message);
+        console.error('❌ Detalle del error:', error);
         // Fallback a Ollama
-        response = await useOllama(mensaje);
+        try {
+          response = await useOllama(mensaje);
+        } catch (ollamaError) {
+          console.error('❌ Error también con Ollama:', ollamaError.message);
+          throw new Error(`Groq falló (${error.message}) y Ollama también falló (${ollamaError.message})`);
+        }
       }
     } else {
       console.log('🔄 Usando Ollama local...');
-      response = await useOllama(mensaje);
+      try {
+        response = await useOllama(mensaje);
+      } catch (error) {
+        console.error('❌ Error con Ollama:', error.message);
+        throw new Error(`Ollama local no disponible: ${error.message}`);
+      }
     }
     
     let resultado;
