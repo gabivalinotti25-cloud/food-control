@@ -6,10 +6,14 @@ import {
   rechazarPropuesta,
   webhookWhatsApp,
   verificarWebhook,
+  diagnosticar,
 } from "../controllers/sebastianController.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
+
+// Diagnosticar configuración (sin auth para debugging)
+router.get("/diagnosticar", diagnosticar);
 
 // Webhook de WhatsApp (sin auth para Twilio)
 router.post("/webhook", webhookWhatsApp);

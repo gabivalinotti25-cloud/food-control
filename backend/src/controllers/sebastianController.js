@@ -61,6 +61,15 @@ FORMATO DE RESPUESTA (ejemplo):
 
 IMPORTANTE: Responde con JSON válido, no con el formato de ejemplo. Usa valores reales basados en el mensaje del usuario.`;
 
+export async function diagnosticar(req, res) {
+  res.json({
+    groqConfigured: !!groqClient,
+    groqApiKeyPresent: !!process.env.GROQ_API_KEY,
+    groqApiKeyStartsWith: process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.substring(0, 10) + '...' : 'N/A',
+    environment: process.env.NODE_ENV || 'unknown'
+  });
+}
+
 export async function procesarMensaje(req, res) {
   try {
     const { mensaje, origen } = req.body;
