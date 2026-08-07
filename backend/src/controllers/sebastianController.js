@@ -162,7 +162,7 @@ export async function procesarMensaje(req, res) {
     
   } catch (error) {
     console.error('❌ Error en Sebastian:', error);
-    res.status(500).json({ error: 'Error al procesar mensaje con Sebastian' });
+    res.status(500).json({ error: error.message || 'Error al procesar mensaje con Sebastian' });
   }
 }
 
