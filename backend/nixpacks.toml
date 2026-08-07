@@ -1,0 +1,5 @@
+[[providers]]
+name = "nodejs"
+
+[env]
+NODE_VERSION = "20"
