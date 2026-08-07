@@ -1,5 +1,8 @@
+import dotenv from "dotenv";
+dotenv.config();
 import prisma from "../prisma.js";
 import ollama from "ollama";
+import Groq from "groq-sdk";
 import twilio from "twilio";
 import { notificar } from "./notificacionesController.js";
 
@@ -22,24 +25,41 @@ if (process.env.TWILIO_ACCOUNT_SID &&
   console.log('ℹ️ Twilio no configurado (credenciales no válidas o no proporcionadas)');
 }
 
-const SYSTEM_PROMPT = `Eres Sebastian, un asistente para un sistema de control de comida. Analiza mensajes y responde en JSON con esta estructura:
-{
-  "accion": "tipo_accion",
-  "descripcion": "explicación breve",
-  "datos": { ...datos específicos },
-  "confianza": 0.95
+// Configuración de Groq (para producción)
+let groqClient = null;
+console.log('🔍 Verificando GROQ_API_KEY:', process.env.GROQ_API_KEY ? 'Presente' : 'Ausente');
+if (process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('tu_')) {
+  try {
+    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    console.log('✅ Groq inicializado correctamente');
+  } catch (error) {
+    console.warn('⚠️ No se pudo inicializar Groq:', error.message);
+  }
+} else {
+  console.log('ℹ️ Groq no configurado (usando Ollama local)');
 }
 
-ACCIONES:
-- crear_cliente: { nombre, telefono }
-- crear_producto: { nombre, precio }
-- crear_pedido: { clienteNombre, productos: [{nombre, cantidad}] }
-- registrar_pago: { clienteNombre, monto, formaPago }
-- consultar_deudas: { clienteNombre }
-- consultar_clientes: {}
-- consultar_productos: {}
+const SYSTEM_PROMPT = `Eres Sebastian, un asistente para un sistema de control de comida. Analiza el mensaje del usuario y responde SOLO en JSON válido.
 
-Si no entiendes, usa accion: "no_entendido". Sé conciso y directo.`;
+ACCIONES DISPONIBLES:
+- crear_cliente: cuando el usuario quiere registrar un nuevo cliente
+- crear_producto: cuando el usuario quiere agregar un nuevo producto
+- crear_pedido: cuando el usuario quiere crear un pedido
+- registrar_pago: cuando el usuario quiere registrar un pago
+- consultar_deudas: cuando el usuario quiere saber cuánto debe alguien
+- consultar_clientes: cuando el usuario quiere ver la lista de clientes
+- consultar_productos: cuando el usuario quiere ver la lista de productos
+- no_entendido: cuando no entiendes la intención
+
+FORMATO DE RESPUESTA (ejemplo):
+{
+  "accion": "crear_cliente",
+  "descripcion": "Registrar al cliente Oliver Maidana",
+  "datos": {"nombre": "Oliver Maidana", "telefono": null},
+  "confianza": 0.9
+}
+
+IMPORTANTE: Responde con JSON válido, no con el formato de ejemplo. Usa valores reales basados en el mensaje del usuario.`;
 
 export async function procesarMensaje(req, res) {
   try {
@@ -47,32 +67,44 @@ export async function procesarMensaje(req, res) {
     
     console.log(`🤖 Sebastian procesando mensaje: "${mensaje}" desde ${origen}`);
     
-    // Procesar con Ollama con timeout
-    console.log('🔄 Llamando a Ollama...');
+    let response;
     
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Ollama no respondió en 60 segundos')), 60000);
-    });
-    
-    const ollamaPromise = ollama.chat({
-      model: 'tinyllama',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: mensaje }
-      ],
-      format: 'json',
-      stream: false
-    });
-    
-    const response = await Promise.race([ollamaPromise, timeoutPromise]);
-    
-    console.log('✅ Ollama respondió:', response.message.content.substring(0, 100));
+    // Usar Groq si está configurado (producción), sino Ollama (local)
+    if (groqClient) {
+      console.log('🔄 Usando Groq para producción...');
+      try {
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout: Groq no respondió en 30 segundos')), 30000);
+        });
+        
+        const groqPromise = groqClient.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: mensaje }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.3
+        });
+        
+        const groqResponse = await Promise.race([groqPromise, timeoutPromise]);
+        response = { message: { content: groqResponse.choices[0].message.content } };
+        console.log('✅ Groq respondió:', response.message.content.substring(0, 100));
+      } catch (error) {
+        console.error('❌ Error con Groq, intentando Ollama:', error.message);
+        // Fallback a Ollama
+        response = await useOllama(mensaje);
+      }
+    } else {
+      console.log('🔄 Usando Ollama local...');
+      response = await useOllama(mensaje);
+    }
     
     let resultado;
     try {
       resultado = JSON.parse(response.message.content);
     } catch (e) {
-      console.error('❌ Error parseando JSON de Ollama:', e);
+      console.error('❌ Error parseando JSON:', e);
       resultado = {
         accion: 'no_entendido',
         descripcion: 'No pude procesar el mensaje correctamente',
@@ -93,53 +125,65 @@ export async function procesarMensaje(req, res) {
         descripcion: resultado.descripcion,
         datos: resultado.datos,
         confianza: resultado.confianza,
-        estado: 'PENDIENTE',
-        respuestaIA: response.message.content
+        estado: 'PENDIENTE'
       }
     });
-    
-    console.log(`✅ Propuesta creada ID: ${propuesta.id}`);
     
     // Guardar en historial de conversaciones
-    await prisma.historialConversacion.create({
-      data: {
-        origen: origen,
-        mensajeUsuario: mensaje,
-        respuestaIA: response.message.content,
-        accionPropuesta: resultado.accion,
-        datosPropuesta: resultado.datos,
-        confianza: resultado.confianza,
-        aprobado: null
-      }
-    });
+    try {
+      await prisma.historialConversacion.create({
+        data: {
+          origen: origen,
+          mensajeUsuario: mensaje,
+          respuestaIA: resultado.descripcion,
+          accionPropuesta: resultado.accion,
+          datosPropuesta: resultado.datos,
+          confianza: resultado.confianza,
+          aprobado: null
+        }
+      });
+    } catch (error) {
+      console.warn('⚠️ No se pudo guardar en historial:', error.message);
+    }
     
-    console.log(`✅ Conversación guardada en historial`);
+    // Notificar sobre nueva propuesta
+    try {
+      await notificar({
+        tipo: 'NUEVA_PROPUESTA_SEBASTIAN',
+        titulo: 'Nueva propuesta de Sebastian',
+        mensaje: resultado.descripcion,
+        datos: { propuestaId: propuesta.id }
+      });
+    } catch (error) {
+      console.warn('⚠️ No se pudo enviar notificación:', error.message);
+    }
     
-    // Crear notificación
-    await notificar(
-      'SEBASTIAN_PROPUESTA',
-      '🎩 Nueva propuesta de Sebastian',
-      `Sebastian ha creado una propuesta: ${resultado.descripcion}`,
-      '/sebastian',
-      { propuestaId: propuesta.id, accion: resultado.accion }
-    );
-    
-    res.json({
-      propuestaId: propuesta.id,
-      accion: resultado.accion,
-      descripcion: resultado.descripcion,
-      datos: resultado.datos,
-      confianza: resultado.confianza,
-      requiereAprobacion: true
-    });
+    res.json(resultado);
     
   } catch (error) {
     console.error('❌ Error en Sebastian:', error);
-    res.status(500).json({ 
-      error: 'Error al procesar mensaje con Sebastian',
-      detalle: error.message 
-    });
+    res.status(500).json({ error: 'Error al procesar mensaje con Sebastian' });
   }
+}
+
+async function useOllama(mensaje) {
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Timeout: Ollama no respondió en 60 segundos')), 60000);
+  });
+  
+  const ollamaPromise = ollama.chat({
+    model: 'tinyllama',
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: mensaje }
+    ],
+    format: 'json',
+    stream: false
+  });
+  
+  const response = await Promise.race([ollamaPromise, timeoutPromise]);
+  console.log('✅ Ollama respondió:', response.message.content.substring(0, 100));
+  return response;
 }
 
 // Webhook para recibir mensajes de WhatsApp
@@ -149,16 +193,28 @@ export async function webhookWhatsApp(req, res) {
     
     console.log(`📱 Mensaje WhatsApp recibido de ${From}: "${Body}"`);
     
-    // Procesar con Sebastian
-    const response = await ollama.chat({
-      model: 'llama3.1',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: Body }
-      ],
-      format: 'json',
-      stream: false
-    });
+    // Procesar con Sebastian usando el mismo sistema que procesarMensaje
+    let response;
+    if (groqClient) {
+      console.log('🔄 Usando Groq para WhatsApp...');
+      try {
+        const groqResponse = await groqClient.chat.completions.create({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: Body }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.3
+        });
+        response = { message: { content: groqResponse.choices[0].message.content } };
+      } catch (error) {
+        console.error('❌ Error con Groq, intentando Ollama:', error.message);
+        response = await useOllama(Body);
+      }
+    } else {
+      response = await useOllama(Body);
+    }
     
     let resultado;
     try {
