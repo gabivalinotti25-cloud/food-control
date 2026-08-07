@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [build.env]
-NPM_FLAGS = "--legacy-peer-deps"
+NPM_FLAGS = "--legacy-peer-deps --omit=dev"
 
 [deploy]
 startCommand = "npm start"
