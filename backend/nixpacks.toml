@@ -1,0 +1,8 @@
+[providers]
+nixpacks = "v1"
+
+[build]
+cmds = []
+
+[env]
+NODE_VERSION = "20"
