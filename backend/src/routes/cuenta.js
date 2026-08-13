@@ -1,12 +1,10 @@
 import { Router } from "express";
+import { obtenerCuenta, crearMovimiento } from "../controllers/cuentaController.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 
-router.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    mensaje: "Ruta cuenta funcionando",
-  });
-});
+router.get("/:clienteId", authMiddleware, obtenerCuenta);
+router.post("/", authMiddleware, crearMovimiento);
 
 export default router;

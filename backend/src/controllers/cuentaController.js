@@ -34,3 +34,42 @@ export async function obtenerCuenta(req, res) {
     });
   }
 }
+
+// Crear movimiento de cuenta manualmente (para agregar deudas viejas)
+export async function crearMovimiento(req, res) {
+  try {
+    const { clienteId, tipo, concepto, monto, formaPago } = req.body;
+
+    const movimiento = await prisma.movimientoCuenta.create({
+      data: {
+        clienteId: Number(clienteId),
+        tipo,
+        concepto,
+        monto: Number(monto),
+        formaPago,
+        fecha: new Date(),
+      },
+    });
+
+    // Actualizar saldo del cliente
+    if (tipo === "CARGO") {
+      await prisma.cliente.update({
+        where: { id: Number(clienteId) },
+        data: { saldo: { increment: Number(monto) } },
+      });
+    } else if (tipo === "ABONO") {
+      await prisma.cliente.update({
+        where: { id: Number(clienteId) },
+        data: { saldo: { decrement: Number(monto) } },
+      });
+    }
+
+    res.json(movimiento);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al crear movimiento",
+    });
+  }
+}

@@ -14,6 +14,13 @@ export default function Deudas() {
   const [formaPago, setFormaPago] = useState("EFECTIVO");
   const [informe, setInforme] = useState(null);
   const [mostrarInforme, setMostrarInforme] = useState(false);
+  const [mostrarFormularioMovimiento, setMostrarFormularioMovimiento] = useState(false);
+  const [movimientoForm, setMovimientoForm] = useState({
+    tipo: "CARGO",
+    concepto: "",
+    monto: "",
+    formaPago: "EFECTIVO",
+  });
 
   useEffect(() => {
     cargarResumen();
@@ -96,6 +103,45 @@ export default function Deudas() {
       alert("Informe copiado al portapapeles");
     }).catch(() => {
       alert("Error al copiar informe");
+    });
+  }
+
+  async function crearMovimiento(e) {
+    e.preventDefault();
+    if (!clienteSel) return;
+
+    try {
+      await api.post("/cuenta", {
+        clienteId: clienteSel.id,
+        ...movimientoForm,
+      });
+      await cargarResumen();
+      const { data } = await api.get(`/cuenta/${clienteSel.id}`);
+      setCuenta(data);
+      setClienteSel({ ...clienteSel, saldo: data.saldo });
+      setMostrarFormularioMovimiento(false);
+      setMovimientoForm({
+        tipo: "CARGO",
+        concepto: "",
+        monto: "",
+        formaPago: "EFECTIVO",
+      });
+    } catch (e) {
+      alert(e.response?.data?.error || "Error al crear movimiento");
+    }
+  }
+
+  function abrirFormularioMovimiento() {
+    setMostrarFormularioMovimiento(true);
+  }
+
+  function cancelarMovimiento() {
+    setMostrarFormularioMovimiento(false);
+    setMovimientoForm({
+      tipo: "CARGO",
+      concepto: "",
+      monto: "",
+      formaPago: "EFECTIVO",
     });
   }
 
@@ -207,6 +253,12 @@ export default function Deudas() {
                     >
                       📋 Generar informe
                     </button>
+                    <button
+                      onClick={abrirFormularioMovimiento}
+                      className="fc-btn fc-btn-secondary text-sm"
+                    >
+                      ➕ Agregar movimiento manual
+                    </button>
                   </div>
 
                   <form onSubmit={registrarPago} className="mt-5 pt-5 border-t flex flex-wrap gap-3 items-end">
@@ -235,6 +287,64 @@ export default function Deudas() {
                       Registrar pago
                     </button>
                   </form>
+
+                  {mostrarFormularioMovimiento && (
+                    <div className="fc-card p-5 bg-amber-50 border-amber-100">
+                      <h3 className="font-bold mb-4">Agregar movimiento manual</h3>
+                      <form onSubmit={crearMovimiento} className="space-y-4">
+                        <div>
+                          <label className="fc-label">Tipo</label>
+                          <select
+                            className="fc-input"
+                            value={movimientoForm.tipo}
+                            onChange={(e) => setMovimientoForm({ ...movimientoForm, tipo: e.target.value })}
+                          >
+                            <option value="CARGO">Deuda (CARGO)</option>
+                            <option value="ABONO">Pago (ABONO)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="fc-label">Concepto</label>
+                          <input
+                            className="fc-input"
+                            value={movimientoForm.concepto}
+                            onChange={(e) => setMovimientoForm({ ...movimientoForm, concepto: e.target.value })}
+                            placeholder="Ej: Deuda vieja de enero"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="fc-label">Monto</label>
+                          <input
+                            type="number"
+                            className="fc-input"
+                            value={movimientoForm.monto}
+                            onChange={(e) => setMovimientoForm({ ...movimientoForm, monto: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="fc-label">Forma de pago</label>
+                          <select
+                            className="fc-input"
+                            value={movimientoForm.formaPago}
+                            onChange={(e) => setMovimientoForm({ ...movimientoForm, formaPago: e.target.value })}
+                          >
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="submit" className="fc-btn fc-btn-primary">
+                            Guardar movimiento
+                          </button>
+                          <button type="button" onClick={cancelarMovimiento} className="fc-btn fc-btn-secondary">
+                            Cancelar
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
                 </div>
 
                 {deudasPedidos.length > 0 && (
