@@ -12,6 +12,7 @@ export default function Clientes() {
     observacion: "",
   });
   const [busqueda, setBusqueda] = useState("");
+  const [editando, setEditando] = useState(null);
 
   useEffect(() => {
     cargarClientes();
@@ -24,9 +25,29 @@ export default function Clientes() {
 
   async function guardarCliente(e) {
     e.preventDefault();
-    await api.post("/clientes", form);
+    if (editando) {
+      await api.put(`/clientes/${editando.id}`, form);
+      setEditando(null);
+    } else {
+      await api.post("/clientes", form);
+    }
     setForm({ nombre: "", telefono: "", direccion: "", observacion: "" });
     cargarClientes();
+  }
+
+  function editarCliente(cliente) {
+    setForm({
+      nombre: cliente.nombre,
+      telefono: cliente.telefono,
+      direccion: cliente.direccion,
+      observacion: cliente.observacion,
+    });
+    setEditando(cliente);
+  }
+
+  function cancelarEdicion() {
+    setForm({ nombre: "", telefono: "", direccion: "", observacion: "" });
+    setEditando(null);
   }
 
   async function eliminarCliente(id) {
@@ -54,7 +75,7 @@ export default function Clientes() {
         </div>
 
         <form onSubmit={guardarCliente} className="fc-card p-5">
-          <h2 className="font-bold mb-4">Nuevo cliente</h2>
+          <h2 className="font-bold mb-4">{editando ? "Editar cliente" : "Nuevo cliente"}</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="fc-label">Nombre</label>
@@ -91,9 +112,16 @@ export default function Clientes() {
               />
             </div>
           </div>
-          <button type="submit" className="fc-btn fc-btn-primary mt-4">
-            Guardar cliente
-          </button>
+          <div className="flex gap-2 mt-4">
+            <button type="submit" className="fc-btn fc-btn-primary">
+              {editando ? "Actualizar cliente" : "Guardar cliente"}
+            </button>
+            {editando && (
+              <button type="button" onClick={cancelarEdicion} className="fc-btn fc-btn-secondary">
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
 
         <div className="fc-card overflow-hidden">
@@ -130,12 +158,20 @@ export default function Clientes() {
                     )}
                   </td>
                   <td className="px-5 py-3">
-                    <button
-                      onClick={() => eliminarCliente(c.id)}
-                      className="fc-btn fc-btn-danger text-xs"
-                    >
-                      Eliminar
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => editarCliente(c)}
+                        className="fc-btn fc-btn-secondary text-xs"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => eliminarCliente(c.id)}
+                        className="fc-btn fc-btn-danger text-xs"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

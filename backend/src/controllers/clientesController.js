@@ -39,6 +39,30 @@ export async function listarClientes(req, res) {
   }
 }
 
+export async function editarCliente(req, res) {
+  try {
+    const id = Number(req.params.id);
+    const { nombre, telefono, direccion, observacion } = req.body;
+
+    const cliente = await prisma.cliente.update({
+      where: { id },
+      data: {
+        nombre,
+        telefono,
+        direccion,
+        observacion,
+      },
+    });
+
+    res.json(cliente);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al editar cliente",
+    });
+  }
+}
+
 export async function eliminarCliente(req, res) {
   try {
     const id = Number(req.params.id);
