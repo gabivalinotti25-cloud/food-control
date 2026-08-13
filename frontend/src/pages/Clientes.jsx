@@ -13,6 +13,14 @@ export default function Clientes() {
   });
   const [busqueda, setBusqueda] = useState("");
   const [editando, setEditando] = useState(null);
+  const [mostrarFormularioMovimiento, setMostrarFormularioMovimiento] = useState(false);
+  const [clienteParaMovimiento, setClienteParaMovimiento] = useState(null);
+  const [movimientoForm, setMovimientoForm] = useState({
+    tipo: "CARGO",
+    concepto: "",
+    monto: "",
+    formaPago: "EFECTIVO",
+  });
 
   useEffect(() => {
     cargarClientes();
@@ -48,6 +56,45 @@ export default function Clientes() {
   function cancelarEdicion() {
     setForm({ nombre: "", telefono: "", direccion: "", observacion: "" });
     setEditando(null);
+  }
+
+  async function crearMovimiento(e) {
+    e.preventDefault();
+    if (!clienteParaMovimiento) return;
+
+    try {
+      await api.post("/cuenta", {
+        clienteId: clienteParaMovimiento.id,
+        ...movimientoForm,
+      });
+      cargarClientes();
+      setMostrarFormularioMovimiento(false);
+      setClienteParaMovimiento(null);
+      setMovimientoForm({
+        tipo: "CARGO",
+        concepto: "",
+        monto: "",
+        formaPago: "EFECTIVO",
+      });
+    } catch (e) {
+      alert(e.response?.data?.error || "Error al crear movimiento");
+    }
+  }
+
+  function abrirFormularioMovimiento(cliente) {
+    setClienteParaMovimiento(cliente);
+    setMostrarFormularioMovimiento(true);
+  }
+
+  function cancelarMovimiento() {
+    setMostrarFormularioMovimiento(false);
+    setClienteParaMovimiento(null);
+    setMovimientoForm({
+      tipo: "CARGO",
+      concepto: "",
+      monto: "",
+      formaPago: "EFECTIVO",
+    });
   }
 
   async function eliminarCliente(id) {
@@ -166,6 +213,12 @@ export default function Clientes() {
                         Editar
                       </button>
                       <button
+                        onClick={() => abrirFormularioMovimiento(c)}
+                        className="fc-btn fc-btn-secondary text-xs"
+                      >
+                        💰 Movimiento
+                      </button>
+                      <button
                         onClick={() => eliminarCliente(c.id)}
                         className="fc-btn fc-btn-danger text-xs"
                       >
@@ -178,6 +231,79 @@ export default function Clientes() {
             </tbody>
           </table>
         </div>
+
+        {/* Modal para agregar movimiento */}
+        {mostrarFormularioMovimiento && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 className="font-bold text-lg">
+                  💰 Agregar movimiento - {clienteParaMovimiento?.nombre}
+                </h3>
+                <button
+                  onClick={cancelarMovimiento}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-4">
+                <form onSubmit={crearMovimiento} className="space-y-4">
+                  <div>
+                    <label className="fc-label">Tipo</label>
+                    <select
+                      className="fc-input"
+                      value={movimientoForm.tipo}
+                      onChange={(e) => setMovimientoForm({ ...movimientoForm, tipo: e.target.value })}
+                    >
+                      <option value="CARGO">Deuda (CARGO)</option>
+                      <option value="ABONO">Pago (ABONO)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="fc-label">Concepto</label>
+                    <input
+                      className="fc-input"
+                      value={movimientoForm.concepto}
+                      onChange={(e) => setMovimientoForm({ ...movimientoForm, concepto: e.target.value })}
+                      placeholder="Ej: Deuda vieja de enero"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="fc-label">Monto</label>
+                    <input
+                      type="number"
+                      className="fc-input"
+                      value={movimientoForm.monto}
+                      onChange={(e) => setMovimientoForm({ ...movimientoForm, monto: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="fc-label">Forma de pago</label>
+                    <select
+                      className="fc-input"
+                      value={movimientoForm.formaPago}
+                      onChange={(e) => setMovimientoForm({ ...movimientoForm, formaPago: e.target.value })}
+                    >
+                      <option value="EFECTIVO">Efectivo</option>
+                      <option value="TRANSFERENCIA">Transferencia</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button type="submit" className="fc-btn fc-btn-primary flex-1">
+                      Guardar movimiento
+                    </button>
+                    <button type="button" onClick={cancelarMovimiento} className="fc-btn fc-btn-secondary flex-1">
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   );
