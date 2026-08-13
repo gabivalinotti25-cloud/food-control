@@ -44,6 +44,7 @@ const SYSTEM_PROMPT = `Eres Sebastian, un asistente para un sistema de control d
 ACCIONES DISPONIBLES:
 - crear_cliente: cuando el usuario quiere registrar un nuevo cliente
 - crear_producto: cuando el usuario quiere agregar un nuevo producto
+- crear_productos: cuando el usuario quiere agregar MÚLTIPLES productos (lista de productos con precios)
 - crear_pedido: cuando el usuario quiere crear un pedido
 - registrar_pago: cuando el usuario quiere registrar un pago
 - consultar_deudas: cuando el usuario quiere saber cuánto debe alguien
@@ -51,15 +52,35 @@ ACCIONES DISPONIBLES:
 - consultar_productos: cuando el usuario quiere ver la lista de productos
 - no_entendido: cuando no entiendes la intención
 
-FORMATO DE RESPUESTA (ejemplo):
+FORMATO DE RESPUESTA (ejemplos):
+
+Para crear UN producto:
 {
-  "accion": "crear_cliente",
-  "descripcion": "Registrar al cliente Oliver Maidana",
-  "datos": {"nombre": "Oliver Maidana", "telefono": null},
+  "accion": "crear_producto",
+  "descripcion": "Crear producto Bife a caballo",
+  "datos": {"nombre": "Bife a caballo", "precio": 30000, "esFijo": true},
   "confianza": 0.9
 }
 
-IMPORTANTE: Responde con JSON válido, no con el formato de ejemplo. Usa valores reales basados en el mensaje del usuario.`;
+Para crear MÚLTIPLES productos (lista):
+{
+  "accion": "crear_productos",
+  "descripcion": "Crear 8 productos fijos",
+  "datos": {
+    "productos": [
+      {"nombre": "Bife a caballo", "precio": 30000, "esFijo": true},
+      {"nombre": "Bife a la plancha", "precio": 26000, "esFijo": true},
+      {"nombre": "Grillé de pollo", "precio": 25000, "esFijo": true}
+    ]
+  },
+  "confianza": 0.9
+}
+
+IMPORTANTE:
+- Cuando el usuario enumera múltiples productos con precios, usa "crear_productos" con un array en "datos.productos"
+- Extrae TODOS los productos mencionados en la lista
+- Los precios pueden estar con puntos (30.000) o sin ellos (30000) - normaliza a números
+- Responde con JSON válido, no con el formato de ejemplo. Usa valores reales basados en el mensaje del usuario.`;
 
 export async function diagnosticar(req, res) {
   res.json({
@@ -344,6 +365,9 @@ export async function aprobarPropuesta(req, res) {
       case 'crear_producto':
         resultado = await ejecutarCrearProducto(datos);
         break;
+      case 'crear_productos':
+        resultado = await ejecutarCrearProductos(datos);
+        break;
       case 'editar_producto':
         resultado = await ejecutarEditarProducto(datos);
         break;
@@ -508,6 +532,36 @@ async function ejecutarCrearProducto(datos) {
     }
   });
   return { tipo: 'producto', id: producto.id, nombre: producto.nombre };
+}
+
+async function ejecutarCrearProductos(datos) {
+  const productos = datos.productos || [];
+  const resultados = [];
+  
+  for (const prod of productos) {
+    try {
+      const producto = await prisma.producto.create({
+        data: {
+          nombre: prod.nombre,
+          precio: Number(String(prod.precio).replace(/\./g, '')), // Remover puntos de precios como "30.000"
+          esFijo: prod.esFijo || false,
+          esLibre: prod.esLibre || false,
+          esEspecial: prod.esEspecial || false,
+          activo: true
+        }
+      });
+      resultados.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio });
+    } catch (error) {
+      console.error(`Error creando producto ${prod.nombre}:`, error.message);
+      resultados.push({ error: prod.nombre, mensaje: error.message });
+    }
+  }
+  
+  return { 
+    tipo: 'productos_creados', 
+    cantidad: resultados.filter(r => !r.error).length,
+    productos: resultados 
+  };
 }
 
 async function ejecutarEditarProducto(datos) {
