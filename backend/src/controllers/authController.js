@@ -14,9 +14,21 @@ export async function registrar(req, res) {
       });
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return res.status(400).json({
-        error: "La contraseña debe tener al menos 6 caracteres",
+        error: "La contraseña debe tener al menos 8 caracteres",
+      });
+    }
+
+    // Validar complejidad de contraseña
+    const tieneMayuscula = /[A-Z]/.test(password);
+    const tieneMinuscula = /[a-z]/.test(password);
+    const tieneNumero = /[0-9]/.test(password);
+    const tieneSimbolo = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || !tieneSimbolo) {
+      return res.status(400).json({
+        error: "La contraseña debe incluir mayúscula, minúscula, número y símbolo",
       });
     }
 
@@ -220,6 +232,24 @@ export async function cambiarPassword(req, res) {
   try {
     const { passwordActual, passwordNueva } = req.body;
 
+    if (!passwordNueva || passwordNueva.length < 8) {
+      return res.status(400).json({
+        error: "La nueva contraseña debe tener al menos 8 caracteres",
+      });
+    }
+
+    // Validar complejidad de contraseña
+    const tieneMayuscula = /[A-Z]/.test(passwordNueva);
+    const tieneMinuscula = /[a-z]/.test(passwordNueva);
+    const tieneNumero = /[0-9]/.test(passwordNueva);
+    const tieneSimbolo = /[!@#$%^&*(),.?":{}|<>]/.test(passwordNueva);
+
+    if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || !tieneSimbolo) {
+      return res.status(400).json({
+        error: "La contraseña debe incluir mayúscula, minúscula, número y símbolo",
+      });
+    }
+
     // Obtener usuario con contraseña
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
@@ -240,8 +270,8 @@ export async function cambiarPassword(req, res) {
       });
     }
 
-    // Encriptar nueva contraseña
-    const salt = await bcrypt.genSalt(10);
+    // Encriptar nueva contraseña con mayor salt rounds para más seguridad
+    const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(passwordNueva, salt);
 
     // Actualizar contraseña
