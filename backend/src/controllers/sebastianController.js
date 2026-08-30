@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import prisma from "../prisma.js";
 import ollama from "ollama";
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 import twilio from "twilio";
 import { notificar } from "./notificacionesController.js";
 
@@ -25,18 +25,18 @@ if (process.env.TWILIO_ACCOUNT_SID &&
   console.log('ℹ️ Twilio no configurado (credenciales no válidas o no proporcionadas)');
 }
 
-// Configuración de Groq (para producción)
-let groqClient = null;
-console.log('🔍 Verificando GROQ_API_KEY:', process.env.GROQ_API_KEY ? 'Presente' : 'Ausente');
-if (process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('tu_')) {
+// Configuración de OpenAI (para producción)
+let openaiClient = null;
+console.log('🔍 Verificando OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'Presente' : 'Ausente');
+if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('sk-proj-')) {
   try {
-    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    console.log('✅ Groq inicializado correctamente');
+    openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    console.log('✅ OpenAI inicializado correctamente');
   } catch (error) {
-    console.warn('⚠️ No se pudo inicializar Groq:', error.message);
+    console.warn('⚠️ No se pudo inicializar OpenAI:', error.message);
   }
 } else {
-  console.log('ℹ️ Groq no configurado (usando Ollama local)');
+  console.log('ℹ️ OpenAI no configurado (usando Ollama local)');
 }
 
 const SYSTEM_PROMPT = `Eres Sebastian, un asistente para un sistema de control de comida. Analiza el mensaje del usuario y responde SOLO en JSON válido.
@@ -84,9 +84,9 @@ IMPORTANTE:
 
 export async function diagnosticar(req, res) {
   res.json({
-    groqConfigured: !!groqClient,
-    groqApiKeyPresent: !!process.env.GROQ_API_KEY,
-    groqApiKeyStartsWith: process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.substring(0, 10) + '...' : 'N/A',
+    openaiConfigured: !!openaiClient,
+    openaiApiKeyPresent: !!process.env.OPENAI_API_KEY,
+    openaiApiKeyStartsWith: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) + '...' : 'N/A',
     environment: process.env.NODE_ENV || 'unknown'
   });
 }
@@ -99,16 +99,16 @@ export async function procesarMensaje(req, res) {
     
     let response;
     
-    // Usar Groq si está configurado (producción), sino Ollama (local)
-    if (groqClient) {
-      console.log('🔄 Usando Groq para producción...');
+    // Usar OpenAI si está configurado (producción), sino Ollama (local)
+    if (openaiClient) {
+      console.log('🔄 Usando OpenAI para producción...');
       try {
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout: Groq no respondió en 30 segundos')), 30000);
+          setTimeout(() => reject(new Error('Timeout: OpenAI no respondió en 30 segundos')), 30000);
         });
         
-        const groqPromise = groqClient.chat.completions.create({
-          model: 'openai/gpt-oss-120b',
+        const openaiPromise = openaiClient.chat.completions.create({
+          model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content: mensaje }
@@ -117,18 +117,18 @@ export async function procesarMensaje(req, res) {
           temperature: 0.3
         });
         
-        const groqResponse = await Promise.race([groqPromise, timeoutPromise]);
-        response = { message: { content: groqResponse.choices[0].message.content } };
-        console.log('✅ Groq respondió:', response.message.content.substring(0, 100));
+        const openaiResponse = await Promise.race([openaiPromise, timeoutPromise]);
+        response = { message: { content: openaiResponse.choices[0].message.content } };
+        console.log('✅ OpenAI respondió:', response.message.content.substring(0, 100));
       } catch (error) {
-        console.error('❌ Error con Groq, intentando Ollama:', error.message);
+        console.error('❌ Error con OpenAI, intentando Ollama:', error.message);
         console.error('❌ Detalle del error:', error);
         // Fallback a Ollama
         try {
           response = await useOllama(mensaje);
         } catch (ollamaError) {
           console.error('❌ Error también con Ollama:', ollamaError.message);
-          throw new Error(`Groq falló (${error.message}) y Ollama también falló (${ollamaError.message})`);
+          throw new Error(`OpenAI falló (${error.message}) y Ollama también falló (${ollamaError.message})`);
         }
       }
     } else {
@@ -236,11 +236,11 @@ export async function webhookWhatsApp(req, res) {
     
     // Procesar con Sebastian usando el mismo sistema que procesarMensaje
     let response;
-    if (groqClient) {
-      console.log('🔄 Usando Groq para WhatsApp...');
+    if (openaiClient) {
+      console.log('🔄 Usando OpenAI para WhatsApp...');
       try {
-        const groqResponse = await groqClient.chat.completions.create({
-          model: 'openai/gpt-oss-120b',
+        const openaiResponse = await openaiClient.chat.completions.create({
+          model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content: Body }
@@ -248,9 +248,9 @@ export async function webhookWhatsApp(req, res) {
           response_format: { type: 'json_object' },
           temperature: 0.3
         });
-        response = { message: { content: groqResponse.choices[0].message.content } };
+        response = { message: { content: openaiResponse.choices[0].message.content } };
       } catch (error) {
-        console.error('❌ Error con Groq, intentando Ollama:', error.message);
+        console.error('❌ Error con OpenAI, intentando Ollama:', error.message);
         response = await useOllama(Body);
       }
     } else {
