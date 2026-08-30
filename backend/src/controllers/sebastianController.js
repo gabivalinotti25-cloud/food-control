@@ -28,7 +28,7 @@ if (process.env.TWILIO_ACCOUNT_SID &&
 // Configuración de OpenAI (para producción)
 let openaiClient = null;
 console.log('🔍 Verificando OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'Presente' : 'Ausente');
-if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('sk-proj-')) {
+if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('tu_')) {
   try {
     openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     console.log('✅ OpenAI inicializado correctamente');
