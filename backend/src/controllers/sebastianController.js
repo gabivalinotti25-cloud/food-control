@@ -108,7 +108,7 @@ export async function procesarMensaje(req, res) {
         });
         
         const groqPromise = groqClient.chat.completions.create({
-          model: 'llama3-70b-8192',
+          model: 'llama-3.3-8b-8192',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content: mensaje }
@@ -240,7 +240,7 @@ export async function webhookWhatsApp(req, res) {
       console.log('🔄 Usando Groq para WhatsApp...');
       try {
         const groqResponse = await groqClient.chat.completions.create({
-          model: 'llama3-70b-8192',
+          model: 'llama-3.3-8b-8192',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content: Body }
