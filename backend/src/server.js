@@ -22,6 +22,7 @@ import sebastianRoutes from "./routes/sebastian.js";
 import notificacionesRoutes from "./routes/notificaciones.js";
 import historialRoutes from "./routes/historial.js";
 import auditoriaRoutes from "./routes/auditoria.js";
+import monitoreoRoutes from "./routes/monitoreo.js";
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use("/sebastian", sebastianRoutes);
 app.use("/notificaciones", notificacionesRoutes);
 app.use("/historial", historialRoutes);
 app.use("/auditoria", auditoriaRoutes);
+app.use("/monitoreo", monitoreoRoutes);
 
 const PORT = process.env.PORT || 3000;
 
