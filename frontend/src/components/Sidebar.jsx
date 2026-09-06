@@ -6,6 +6,7 @@ const navItems = [
   { to: "/clientes", label: "Clientes", icon: "👥" },
   { to: "/productos", label: "Productos", icon: "🍽️" },
   { to: "/estadisticas", label: "Estadísticas", icon: "📊" },
+  { to: "/suscripcion", label: "Suscripción", icon: "💎", admin: true },
   { to: "/configuracion", label: "Configuración", icon: "⚙️", admin: true },
 ];
 
