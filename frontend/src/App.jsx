@@ -10,12 +10,14 @@ import Sebastian from "./pages/Sebastian";
 import HistorialSebastian from "./pages/HistorialSebastian";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
+import Landing from "./pages/Landing";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
 
