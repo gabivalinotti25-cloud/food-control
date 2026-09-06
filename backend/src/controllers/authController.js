@@ -1,0 +1,312 @@
+import prisma from "../prisma.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "food-control-secret-key";
+
+export async function registrar(req, res) {
+  try {
+    const { email, password, nombre, rol } = req.body;
+
+    if (!email?.trim() || !password?.trim() || !nombre?.trim()) {
+      return res.status(400).json({
+        error: "Email, contraseña y nombre son obligatorios",
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: "La contraseña debe tener al menos 8 caracteres",
+      });
+    }
+
+    // Validar complejidad de contraseña
+    const tieneMayuscula = /[A-Z]/.test(password);
+    const tieneMinuscula = /[a-z]/.test(password);
+    const tieneNumero = /[0-9]/.test(password);
+    
+    // Verificar si tiene algún carácter que no sea letra ni número
+    let tieneSimbolo = false;
+    for (let i = 0; i < password.length; i++) {
+      const char = password[i];
+      if (!/[a-zA-Z0-9]/.test(char)) {
+        tieneSimbolo = true;
+        break;
+      }
+    }
+
+    if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || !tieneSimbolo) {
+      return res.status(400).json({
+        error: "La contraseña debe incluir mayúscula, minúscula, número y símbolo",
+      });
+    }
+
+    // Verificar si el usuario ya existe
+    const usuarioExistente = await prisma.usuario.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
+
+    if (usuarioExistente) {
+      return res.status(400).json({
+        error: "El email ya está registrado",
+      });
+    }
+
+    // Encriptar contraseña
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // Crear usuario con negocioId por defecto (1)
+    const usuario = await prisma.usuario.create({
+      data: {
+        email: email.trim().toLowerCase(),
+        password: passwordHash,
+        nombre: nombre.trim(),
+        rol: rol || "EMPLEADO",
+        negocioId: 1, // Por defecto al negocio demo
+      },
+    });
+
+    // Generar token con negocioId
+    const token = jwt.sign(
+      { id: usuario.id, email: usuario.email, rol: usuario.rol, negocioId: usuario.negocioId },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    res.status(201).json({
+      mensaje: "Usuario registrado exitosamente",
+      token,
+      usuario: {
+        id: usuario.id,
+        email: usuario.email,
+        nombre: usuario.nombre,
+        rol: usuario.rol,
+        negocioId: usuario.negocioId,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al registrar usuario",
+    });
+  }
+}
+
+export async function login(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    if (!email?.trim() || !password?.trim()) {
+      return res.status(400).json({
+        error: "Email y contraseña son obligatorios",
+      });
+    }
+
+    // Buscar usuario
+    const usuario = await prisma.usuario.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
+
+    if (!usuario) {
+      return res.status(401).json({
+        error: "Credenciales inválidas",
+      });
+    }
+
+    // Verificar si está activo
+    if (!usuario.activo) {
+      return res.status(401).json({
+        error: "Usuario desactivado",
+      });
+    }
+
+    // Verificar contraseña
+    const passwordValida = await bcrypt.compare(password, usuario.password);
+
+    if (!passwordValida) {
+      return res.status(401).json({
+        error: "Credenciales inválidas",
+      });
+    }
+
+    // Generar token con negocioId
+    const token = jwt.sign(
+      { id: usuario.id, email: usuario.email, rol: usuario.rol, negocioId: usuario.negocioId },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    res.json({
+      mensaje: "Login exitoso",
+      token,
+      usuario: {
+        id: usuario.id,
+        email: usuario.email,
+        nombre: usuario.nombre,
+        rol: usuario.rol,
+        negocioId: usuario.negocioId,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al iniciar sesión",
+    });
+  }
+}
+
+export async function obtenerPerfil(req, res) {
+  try {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: req.usuario.id },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        rol: true,
+        activo: true,
+        negocioId: true,
+        createdAt: true,
+      },
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        error: "Usuario no encontrado",
+      });
+    }
+
+    res.json(usuario);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al obtener perfil",
+    });
+  }
+}
+
+export async function listarUsuarios(req, res) {
+  try {
+    const negocioId = req.usuario.negocioId;
+
+    const usuarios = await prisma.usuario.findMany({
+      where: { negocioId },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        rol: true,
+        activo: true,
+        negocioId: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json(usuarios);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al listar usuarios",
+    });
+  }
+}
+
+export async function actualizarUsuario(req, res) {
+  try {
+    const { id } = req.params;
+    const { nombre, rol, activo } = req.body;
+
+    const usuario = await prisma.usuario.update({
+      where: { id: Number(id) },
+      data: {
+        nombre,
+        rol,
+        activo,
+      },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        rol: true,
+        activo: true,
+        negocioId: true,
+      },
+    });
+
+    res.json(usuario);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al actualizar usuario",
+    });
+  }
+}
+
+export async function cambiarPassword(req, res) {
+  try {
+    const { passwordActual, passwordNueva } = req.body;
+
+    if (!passwordNueva || passwordNueva.length < 8) {
+      return res.status(400).json({
+        error: "La nueva contraseña debe tener al menos 8 caracteres",
+      });
+    }
+
+    // Validar complejidad de contraseña
+    const tieneMayuscula = /[A-Z]/.test(passwordNueva);
+    const tieneMinuscula = /[a-z]/.test(passwordNueva);
+    const tieneNumero = /[0-9]/.test(passwordNueva);
+    const tieneSimbolo = /[!@#$%^&*(),.?":{}|<>]/.test(passwordNueva);
+
+    if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || !tieneSimbolo) {
+      return res.status(400).json({
+        error: "La contraseña debe incluir mayúscula, minúscula, número y símbolo",
+      });
+    }
+
+    // Obtener usuario con contraseña
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: req.usuario.id },
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        error: "Usuario no encontrado",
+      });
+    }
+
+    // Verificar contraseña actual
+    const passwordValida = await bcrypt.compare(passwordActual, usuario.password);
+
+    if (!passwordValida) {
+      return res.status(401).json({
+        error: "Contraseña actual incorrecta",
+      });
+    }
+
+    // Encriptar nueva contraseña con mayor salt rounds para más seguridad
+    const salt = await bcrypt.genSalt(12);
+    const passwordHash = await bcrypt.hash(passwordNueva, salt);
+
+    // Actualizar contraseña
+    await prisma.usuario.update({
+      where: { id: req.usuario.id },
+      data: {
+        password: passwordHash,
+      },
+    });
+
+    res.json({
+      mensaje: "Contraseña actualizada exitosamente",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al cambiar contraseña",
+    });
+  }
+}
