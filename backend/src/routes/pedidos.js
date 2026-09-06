@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth.js";
+import { verificarLimite } from "../middleware/limites.js";
 import {
   crearPedido,
   listarPedidos,
@@ -8,7 +9,7 @@ import {
 
 const router = Router();
 
-router.post("/", authMiddleware, crearPedido);
+router.post("/", authMiddleware, verificarLimite("pedidos"), crearPedido);
 router.get("/", authMiddleware, listarPedidos);
 router.delete("/:id", authMiddleware, eliminarPedido);
 

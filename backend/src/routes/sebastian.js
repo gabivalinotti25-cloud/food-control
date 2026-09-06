@@ -10,6 +10,7 @@ import {
 } from "../controllers/sebastianController.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { sebastianRateLimiter } from "../middleware/rateLimiter.js";
+import { verificarLimite } from "../middleware/limites.js";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.post("/webhook", webhookWhatsApp);
 router.get("/webhook", verificarWebhook);
 
 // Procesar mensaje de WhatsApp (sin auth para webhook de Twilio)
-router.post("/mensaje", sebastianRateLimiter, procesarMensaje);
+router.post("/mensaje", sebastianRateLimiter, verificarLimite("sebastian"), procesarMensaje);
 
 // Listar propuestas (requiere auth)
 router.get("/propuestas", authMiddleware, listarPropuestas);

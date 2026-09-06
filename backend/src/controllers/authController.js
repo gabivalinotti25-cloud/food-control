@@ -148,8 +148,8 @@ export async function login(req, res) {
 
 export async function obtenerPerfil(req, res) {
   try {
-    const usuario = await prisma.usuario.findUnique({
-      where: { id: req.usuario.id },
+    const usuario = await prisma.usuario.findFirst({
+      where: { id: req.usuario.id, negocioId: req.negocioId || 1 },
       select: {
         id: true,
         email: true,
@@ -178,6 +178,7 @@ export async function obtenerPerfil(req, res) {
 export async function listarUsuarios(req, res) {
   try {
     const usuarios = await prisma.usuario.findMany({
+      where: { negocioId: req.negocioId || 1 },
       select: {
         id: true,
         email: true,
@@ -206,7 +207,7 @@ export async function actualizarUsuario(req, res) {
     const { nombre, rol, activo } = req.body;
 
     const usuario = await prisma.usuario.update({
-      where: { id: Number(id) },
+      where: { id: Number(id), negocioId: req.negocioId || 1 },
       data: {
         nombre,
         rol,

@@ -6,10 +6,11 @@ import {
   eliminarCliente,
 } from "../controllers/clientesController.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { verificarLimite } from "../middleware/limites.js";
 
 const router = Router();
 
-router.post("/", authMiddleware, crearCliente);
+router.post("/", authMiddleware, verificarLimite("clientes"), crearCliente);
 router.get("/", authMiddleware, listarClientes);
 router.put("/:id", authMiddleware, editarCliente);
 router.delete("/:id", authMiddleware, eliminarCliente);

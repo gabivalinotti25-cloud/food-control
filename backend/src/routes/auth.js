@@ -8,11 +8,12 @@ import {
   cambiarPassword,
 } from "../controllers/authController.js";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
+import { verificarLimite } from "../middleware/limites.js";
 
 const router = Router();
 
 // Rutas públicas
-router.post("/registrar", registrar);
+router.post("/registrar", verificarLimite("usuarios"), registrar);
 router.post("/login", login);
 
 // Rutas protegidas
