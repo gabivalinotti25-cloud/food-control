@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import Landing from "./pages/Landing";
 import Suscripcion from "./pages/Suscripcion";
+import Usuarios from "./pages/Usuarios";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -83,6 +84,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Suscripcion />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/usuarios"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <Usuarios />
             </ProtectedRoute>
           }
         />
