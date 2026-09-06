@@ -18,7 +18,12 @@ model Usuario {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
   auditorias AuditoriaAcciones[]
+  
+  @@index([negocioId])
 }
 
 
@@ -27,18 +32,90 @@ enum Rol {
   EMPLEADO
 }
 
+enum PlanSuscripcion {
+  GRATIS
+  BASICO
+  PRO
+  ENTERPRISE
+}
+
+enum EstadoNegocio {
+  ACTIVO
+  SUSPENDIDO
+  CANCELADO
+}
+
+
+model Negocio {
+  id              Int      @id @default(autoincrement())
+  nombre          String
+  slug            String   @unique // URL personalizada: mi-negocio.food-control.com
+  email           String   @unique
+  telefono        String?
+  direccion       String?
+  plan            PlanSuscripcion @default(GRATIS)
+  estado          EstadoNegocio @default(ACTIVO)
+  
+  // Límites del plan
+  maxUsuarios     Int      @default(3)
+  maxClientes     Int      @default(50)
+  maxPedidosMes   Int      @default(100)
+  maxSebastianMsg Int      @default(20)
+  
+  // Configuración
+  whatsappNumero String?
+  whatsappApiKey String?
+  
+  // Personalización (white-label)
+  logoUrl         String?
+  colorPrimario   String   @default("#3B82F6")
+  colorSecundario String  @default("#1E40AF")
+  dominioCustom   String?
+  
+  // Fechas
+  trialEndsAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relaciones
+  usuarios        Usuario[]
+  clientes        Cliente[]
+  productos       Producto[]
+  pedidos         Pedido[]
+  movimientosCuenta MovimientoCuenta[]
+  ventasAnonimas  VentaAnonima[]
+  menusPlantilla  MenuPlantilla[]
+  menusDiarios    MenuDiario[]
+  cajasDiarias    CajaDiaria[]
+  configuracionesMenu ConfiguracionMenu[]
+  propuestasSebastian PropuestaSebastian[]
+  notificaciones  Notificacion[]
+  historialConversacion HistorialConversacion[]
+  auditorias      AuditoriaAcciones[]
+  
+  @@index([slug])
+  @@index([estado])
+  @@index([plan])
+}
+
 
 model Cliente {
   id          Int      @id @default(autoincrement())
   nombre      String
-  telefono    String   @unique
+  telefono    String
   direccion   String?
   observacion String?
   saldo       Int      @default(0)
   createdAt   DateTime @default(now())
 
+  negocioId   Int      @default(1) // Valor por defecto para migración
+  negocio     Negocio @relation(fields: [negocioId], references: [id])
+
   pedidos      Pedido[]
   movimientos  MovimientoCuenta[]
+  
+  @@unique([negocioId, telefono])
+  @@index([negocioId])
 }
 
 
@@ -60,9 +137,14 @@ model Producto {
 
   createdAt  DateTime @default(now())
 
+  negocioId  Int      @default(1) // Valor por defecto para migración
+  negocio    Negocio @relation(fields: [negocioId], references: [id])
+
   detallesPedido PedidoDetalle[]
   menus MenuPlantillaDetalle[]
   menusDiarios MenuDiarioDetalle[]
+  
+  @@index([negocioId])
 }
 
 model Pedido {
@@ -76,8 +158,13 @@ model Pedido {
   clienteId Int
   cliente   Cliente @relation(fields: [clienteId], references: [id])
 
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+
   pago     Pago?
   detalles PedidoDetalle[]
+  
+  @@index([negocioId])
 }
 
 
@@ -149,6 +236,11 @@ model MovimientoCuenta {
 
   clienteId Int
   cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
+  @@index([negocioId])
 }
 
 
@@ -163,7 +255,12 @@ model MenuPlantilla {
 
   diaSemana Int
 
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+
   productos MenuPlantillaDetalle[]
+  
+  @@index([negocioId])
 }
 
 
@@ -183,7 +280,12 @@ model MenuDiario {
 
   fecha DateTime @unique
 
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+
   productos MenuDiarioDetalle[]
+  
+  @@index([negocioId])
 }
 
 
@@ -205,6 +307,11 @@ model VentaAnonima {
   descripcion String?
   formaPago FormaPago
   fecha DateTime @default(now())
+  
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
+  @@index([negocioId])
 }
 
 
@@ -222,8 +329,13 @@ model CajaDiaria {
   cerrada Boolean @default(false)
   fechaCierre DateTime?
   
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@index([negocioId])
 }
 
 
@@ -237,8 +349,13 @@ model ConfiguracionMenu {
   
   activo Boolean @default(true)
   
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@index([negocioId])
 }
 
 
@@ -258,6 +375,11 @@ model PropuestaSebastian {
   ejecutadaAt     DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
+  @@index([negocioId])
 }
 
 
@@ -270,6 +392,11 @@ model Notificacion {
   link        String?  // URL para navegar a la sección relevante
   datos       Json?    // Datos adicionales relacionados
   createdAt   DateTime @default(now())
+  
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
+  @@index([negocioId])
 }
 
 model HistorialConversacion {
@@ -283,8 +410,12 @@ model HistorialConversacion {
   confianza       Float?   // Nivel de confianza de Sebastian (0-1)
   createdAt       DateTime @default(now())
   
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
   @@index([origen])
   @@index([createdAt])
+  @@index([negocioId])
 }
 
 model AuditoriaAcciones {
@@ -301,7 +432,11 @@ model AuditoriaAcciones {
   userAgent   String?  // User agent del navegador
   createdAt   DateTime @default(now())
   
+  negocioId Int      @default(1) // Valor por defecto para migración
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+  
   @@index([usuarioId])
   @@index([accion])
   @@index([createdAt])
+  @@index([negocioId])
 }

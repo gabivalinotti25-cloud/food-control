@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 // Rate limiting para Sebastian (evitar abuso de IA que cuesta dinero)
 export const sebastianRateLimiter = rateLimit({
@@ -14,7 +14,10 @@ export const sebastianRateLimiter = rateLimit({
     if (req.user && req.user.id) {
       return `user_${req.user.id}`;
     }
-    return req.ip;
+    if (req.usuario && req.usuario.id) {
+      return `user_${req.usuario.id}`;
+    }
+    return ipKeyGenerator(req.ip);
   }
 });
 
@@ -31,6 +34,9 @@ export const apiRateLimiter = rateLimit({
     if (req.user && req.user.id) {
       return `user_${req.user.id}`;
     }
-    return req.ip;
+    if (req.usuario && req.usuario.id) {
+      return `user_${req.usuario.id}`;
+    }
+    return ipKeyGenerator(req.ip);
   }
 });

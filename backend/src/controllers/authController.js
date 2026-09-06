@@ -24,7 +24,7 @@ export async function registrar(req, res) {
     const tieneMayuscula = /[A-Z]/.test(password);
     const tieneMinuscula = /[a-z]/.test(password);
     const tieneNumero = /[0-9]/.test(password);
-    const tieneSimbolo = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const tieneSimbolo = /[^a-zA-Z0-9]/.test(password);
 
     if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || !tieneSimbolo) {
       return res.status(400).json({
@@ -242,7 +242,7 @@ export async function cambiarPassword(req, res) {
     const tieneMayuscula = /[A-Z]/.test(passwordNueva);
     const tieneMinuscula = /[a-z]/.test(passwordNueva);
     const tieneNumero = /[0-9]/.test(passwordNueva);
-    const tieneSimbolo = /[!@#$%^&*(),.?":{}|<>]/.test(passwordNueva);
+    const tieneSimbolo = /[^a-zA-Z0-9]/.test(passwordNueva);
 
     if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || !tieneSimbolo) {
       return res.status(400).json({
