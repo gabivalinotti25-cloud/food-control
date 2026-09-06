@@ -32,6 +32,12 @@ export default function Suscripcion() {
 
   useEffect(() => {
     cargarDatos();
+    // Mostrar mensaje si fuimos redirigidos por límite de plan
+    const upgradeMsg = sessionStorage.getItem("upgradeMensaje");
+    if (upgradeMsg) {
+      setError(upgradeMsg);
+      sessionStorage.removeItem("upgradeMensaje");
+    }
   }, []);
 
   async function cargarDatos() {

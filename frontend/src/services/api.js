@@ -32,6 +32,15 @@ api.interceptors.response.use(
       requestUrl.includes("/auth/login") ||
       requestUrl.includes("/auth/registrar");
 
+    // Límite de plan alcanzado → redirigir a suscripción
+    if (error.response?.status === 403 && error.response?.data?.upgrade) {
+      const mensaje = error.response.data.error || "Límite del plan alcanzado";
+      if (window.location.pathname !== "/suscripcion") {
+        sessionStorage.setItem("upgradeMensaje", mensaje);
+        window.location.href = "/suscripcion";
+      }
+    }
+
     if (error.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem("token");
       localStorage.removeItem("usuario");

@@ -82,8 +82,8 @@ export function verificarLimite(tipo) {
       next();
     } catch (error) {
       console.error("Error verificando límite de plan:", error);
-      // En caso de error, no bloquear la operación
-      next();
+      // Fail-closed: si no podemos verificar el límite, no permitir la operación
+      res.status(500).json({ error: "Error al verificar límites del plan" });
     }
   };
 }
