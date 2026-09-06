@@ -6,9 +6,89 @@ export default function Configuracion() {
   const [estadisticas, setEstadisticas] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Personalización (white-label)
+  const [personalizacion, setPersonalizacion] = useState(null);
+  const [temas, setTemas] = useState({});
+  const [formPersonalizacion, setFormPersonalizacion] = useState({
+    colorPrimario: "#3B82F6",
+    colorSecundario: "#1E40AF",
+    logoUrl: "",
+    dominioCustom: "",
+  });
+  const [guardandoPers, setGuardandoPers] = useState(false);
+  const [mensajePers, setMensajePers] = useState("");
+  const [errorPers, setErrorPers] = useState("");
+
   useEffect(() => {
     cargarEstadisticas();
+    cargarPersonalizacion();
   }, []);
+
+  async function cargarPersonalizacion() {
+    try {
+      const [persRes, temasRes] = await Promise.all([
+        api.get("/personalizacion"),
+        api.get("/personalizacion/temas"),
+      ]);
+      setPersonalizacion(persRes.data);
+      setTemas(temasRes.data || {});
+      setFormPersonalizacion({
+        colorPrimario: persRes.data.colorPrimario || "#3B82F6",
+        colorSecundario: persRes.data.colorSecundario || "#1E40AF",
+        logoUrl: persRes.data.logoUrl || "",
+        dominioCustom: persRes.data.dominioCustom || "",
+      });
+    } catch (error) {
+      // Endpoint no disponible aún
+    }
+  }
+
+  async function guardarPersonalizacion(e) {
+    e.preventDefault();
+    setGuardandoPers(true);
+    setMensajePers("");
+    setErrorPers("");
+    try {
+      const res = await api.put("/personalizacion", {
+        colorPrimario: formPersonalizacion.colorPrimario,
+        colorSecundario: formPersonalizacion.colorSecundario,
+        logoUrl: formPersonalizacion.logoUrl || null,
+        dominioCustom: formPersonalizacion.dominioCustom || null,
+      });
+      setPersonalizacion(res.data.negocio);
+      setMensajePers("Personalización guardada");
+      aplicarColores(res.data.negocio);
+    } catch (error) {
+      setErrorPers(error.response?.data?.error || "Error al guardar");
+    } finally {
+      setGuardandoPers(false);
+    }
+  }
+
+  async function aplicarTema(nombre) {
+    try {
+      const res = await api.post(`/personalizacion/tema/${nombre}`);
+      setPersonalizacion(res.data.negocio);
+      setFormPersonalizacion((prev) => ({
+        ...prev,
+        colorPrimario: res.data.negocio.colorPrimario,
+        colorSecundario: res.data.negocio.colorSecundario,
+      }));
+      setMensajePers(`Tema "${nombre}" aplicado`);
+      aplicarColores(res.data.negocio);
+    } catch (error) {
+      setErrorPers(error.response?.data?.error || "Error al aplicar tema");
+    }
+  }
+
+  function aplicarColores(negocio) {
+    if (negocio?.colorPrimario) {
+      document.documentElement.style.setProperty("--color-primario", negocio.colorPrimario);
+    }
+    if (negocio?.colorSecundario) {
+      document.documentElement.style.setProperty("--color-secundario", negocio.colorSecundario);
+    }
+  }
 
   async function cargarEstadisticas() {
     try {
@@ -129,6 +209,143 @@ export default function Configuracion() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Personalización (white-label) */}
+      {personalizacion && (
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Personalización</h2>
+
+          {mensajePers && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded-lg mb-4 text-sm">
+              {mensajePers}
+            </div>
+          )}
+          {errorPers && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg mb-4 text-sm">
+              {errorPers}
+            </div>
+          )}
+
+          {/* Temas predefinidos */}
+          {Object.keys(temas).length > 0 && (
+            <div className="mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-2">Temas predefinidos</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(temas).map(([nombre, tema]) => (
+                  <button
+                    key={nombre}
+                    onClick={() => aplicarTema(nombre)}
+                    className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 hover:border-blue-500"
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: tema.colorPrimario }}
+                    />
+                    <span className="text-sm capitalize">{nombre}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={guardarPersonalizacion} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color primario
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={formPersonalizacion.colorPrimario}
+                    onChange={(e) =>
+                      setFormPersonalizacion({ ...formPersonalizacion, colorPrimario: e.target.value })
+                    }
+                    className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={formPersonalizacion.colorPrimario}
+                    onChange={(e) =>
+                      setFormPersonalizacion({ ...formPersonalizacion, colorPrimario: e.target.value })
+                    }
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color secundario
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={formPersonalizacion.colorSecundario}
+                    onChange={(e) =>
+                      setFormPersonalizacion({ ...formPersonalizacion, colorSecundario: e.target.value })
+                    }
+                    className="w-10 h-10 rounded border border-gray-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={formPersonalizacion.colorSecundario}
+                    onChange={(e) =>
+                      setFormPersonalizacion({ ...formPersonalizacion, colorSecundario: e.target.value })
+                    }
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                URL del logo
+              </label>
+              <input
+                type="url"
+                value={formPersonalizacion.logoUrl}
+                onChange={(e) =>
+                  setFormPersonalizacion({ ...formPersonalizacion, logoUrl: e.target.value })
+                }
+                placeholder="https://ejemplo.com/logo.png"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+              {formPersonalizacion.logoUrl && (
+                <img
+                  src={formPersonalizacion.logoUrl}
+                  alt="Logo"
+                  className="mt-2 h-12 object-contain"
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Dominio personalizado
+              </label>
+              <input
+                type="text"
+                value={formPersonalizacion.dominioCustom}
+                onChange={(e) =>
+                  setFormPersonalizacion({ ...formPersonalizacion, dominioCustom: e.target.value })
+                }
+                placeholder="pedidos.tunegocio.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={guardandoPers}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              {guardandoPers ? "Guardando..." : "Guardar personalización"}
+            </button>
+          </form>
         </div>
       )}
 
