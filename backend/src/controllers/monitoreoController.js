@@ -38,6 +38,8 @@ export async function healthCheck(req, res) {
 
 export async function obtenerEstadisticasSistema(req, res) {
   try {
+    const negocioId = req.negocioId || 1;
+
     const [
       totalUsuarios,
       totalClientes,
@@ -47,14 +49,15 @@ export async function obtenerEstadisticasSistema(req, res) {
       pedidosPendientes,
       auditoriasRecientes
     ] = await Promise.all([
-      prisma.usuario.count(),
-      prisma.cliente.count(),
-      prisma.pedido.count(),
-      prisma.producto.count(),
-      prisma.cliente.count({ where: { saldo: { gt: 0 } } }),
-      prisma.pedido.count({ where: { estado: 'PENDIENTE' } }),
+      prisma.usuario.count({ where: { negocioId } }),
+      prisma.cliente.count({ where: { negocioId } }),
+      prisma.pedido.count({ where: { negocioId } }),
+      prisma.producto.count({ where: { negocioId } }),
+      prisma.cliente.count({ where: { saldo: { gt: 0 }, negocioId } }),
+      prisma.pedido.count({ where: { estado: 'PENDIENTE', negocioId } }),
       prisma.auditoriaAcciones.count({
         where: {
+          negocioId,
           createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Últimas 24 horas
           }
@@ -64,7 +67,7 @@ export async function obtenerEstadisticasSistema(req, res) {
 
     // Calcular deuda total
     const clientesConDeudaData = await prisma.cliente.findMany({
-      where: { saldo: { gt: 0 } },
+      where: { saldo: { gt: 0 }, negocioId },
       select: { saldo: true }
     });
     const deudaTotal = clientesConDeudaData.reduce((sum, c) => sum + c.saldo, 0);
@@ -91,8 +94,10 @@ export async function obtenerAlertas(req, res) {
     const alertas = [];
 
     // Alerta: Clientes con deuda alta (> $50,000)
+    const negocioId = req.negocioId || 1;
+
     const clientesDeudaAlta = await prisma.cliente.findMany({
-      where: { saldo: { gt: 50000 } },
+      where: { saldo: { gt: 50000 }, negocioId },
       select: { id: true, nombre: true, telefono: true, saldo: true }
     });
 
@@ -109,6 +114,7 @@ export async function obtenerAlertas(req, res) {
     const pedidosPendientesAntiguos = await prisma.pedido.findMany({
       where: {
         estado: 'PENDIENTE',
+        negocioId,
         fecha: { lt: new Date(Date.now() - 60 * 60 * 1000) }
       },
       include: { cliente: true }
@@ -126,6 +132,7 @@ export async function obtenerAlertas(req, res) {
     // Alerta: Uso excesivo de Sebastian (más de 15 mensajes en última hora)
     const usoSebastianUltimaHora = await prisma.historialConversacion.count({
       where: {
+        negocioId,
         createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) }
       }
     });

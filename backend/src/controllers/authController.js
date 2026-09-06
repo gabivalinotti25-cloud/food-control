@@ -59,7 +59,7 @@ export async function registrar(req, res) {
 
     // Generar token
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email, rol: usuario.rol },
+      { id: usuario.id, email: usuario.email, rol: usuario.rol, negocioId: usuario.negocioId },
       JWT_SECRET,
       { expiresIn: "24h" }
     );
@@ -72,6 +72,7 @@ export async function registrar(req, res) {
         email: usuario.email,
         nombre: usuario.nombre,
         rol: usuario.rol,
+        negocioId: usuario.negocioId,
       },
     });
   } catch (error) {
@@ -121,7 +122,7 @@ export async function login(req, res) {
 
     // Generar token
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email, rol: usuario.rol },
+      { id: usuario.id, email: usuario.email, rol: usuario.rol, negocioId: usuario.negocioId },
       JWT_SECRET,
       { expiresIn: "24h" }
     );
@@ -134,6 +135,7 @@ export async function login(req, res) {
         email: usuario.email,
         nombre: usuario.nombre,
         rol: usuario.rol,
+        negocioId: usuario.negocioId,
       },
     });
   } catch (error) {

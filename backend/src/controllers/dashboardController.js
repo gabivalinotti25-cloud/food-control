@@ -4,6 +4,7 @@ export async function obtenerDashboard(req, res) {
   try {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
+    const negocioId = req.negocioId || 1;
 
     const [
       clientes,
@@ -14,12 +15,13 @@ export async function obtenerDashboard(req, res) {
       movimientos,
       ultimosPedidos,
     ] = await Promise.all([
-      prisma.cliente.count(),
+      prisma.cliente.count({ where: { negocioId } }),
 
-      prisma.pedido.count(),
+      prisma.pedido.count({ where: { negocioId } }),
 
       prisma.pedido.count({
         where: {
+          negocioId,
           estado: {
             not: "ENTREGADO",
           },
@@ -27,6 +29,7 @@ export async function obtenerDashboard(req, res) {
       }),
 
       prisma.pedido.aggregate({
+        where: { negocioId },
         _sum: {
           total: true,
         },
@@ -34,6 +37,7 @@ export async function obtenerDashboard(req, res) {
 
       prisma.pedido.aggregate({
         where: {
+          negocioId,
           fecha: {
             gte: hoy,
           },
@@ -43,9 +47,10 @@ export async function obtenerDashboard(req, res) {
         },
       }),
 
-      prisma.movimientoCuenta.findMany(),
+      prisma.movimientoCuenta.findMany({ where: { negocioId } }),
 
       prisma.pedido.findMany({
+        where: { negocioId },
         include: {
           cliente: true,
           pago: true,

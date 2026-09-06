@@ -3,6 +3,7 @@ import prisma from "../prisma.js";
 export async function listarCategorias(req, res) {
   try {
     const categorias = await prisma.categoria.findMany({
+      where: { negocioId: req.negocioId || 1 },
       orderBy: {
         nombre: "asc",
       },
@@ -26,6 +27,7 @@ export async function crearCategoria(req, res) {
     const categoria = await prisma.categoria.create({
       data: {
         nombre,
+        negocioId: req.negocioId || 1,
       },
     });
 

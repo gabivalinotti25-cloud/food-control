@@ -6,9 +6,10 @@ export async function registrarPago(req, res) {
   try {
     const { clienteId, monto, formaPago } = req.body;
 
-    const cliente = await prisma.cliente.findUnique({
+    const cliente = await prisma.cliente.findFirst({
       where: {
         id: Number(clienteId),
+        negocioId: req.negocioId || 1,
       },
     });
 
@@ -22,6 +23,7 @@ export async function registrarPago(req, res) {
     await prisma.movimientoCuenta.create({
       data: {
         clienteId: Number(clienteId),
+        negocioId: req.negocioId || 1,
         tipo: "ABONO",
         concepto: "Pago de cuenta corriente",
         monto: Number(monto),
@@ -66,9 +68,10 @@ export async function eliminarMovimiento(req, res) {
     }
 
     // Obtener el movimiento
-    const movimiento = await prisma.movimientoCuenta.findUnique({
+    const movimiento = await prisma.movimientoCuenta.findFirst({
       where: {
         id: Number(movimientoId),
+        negocioId: req.negocioId || 1,
       },
     });
 

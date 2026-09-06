@@ -45,6 +45,94 @@ enum EstadoNegocio {
   CANCELADO
 }
 
+enum EstadoSuscripcion {
+  ACTIVA
+  CANCELADA
+  VENCIDA
+  PRUEBA
+}
+
+enum MetodoPago {
+  TARJETA
+  TRANSFERENCIA
+  EFECTIVO
+  MERCADOPAGO
+}
+
+enum EstadoFactura {
+  PENDIENTE
+  PAGADA
+  VENCIDA
+  ANULADA
+}
+
+enum EstadoOnboarding {
+  PENDIENTE
+  EN_PROGRESO
+  COMPLETADO
+  OMITIDO
+}
+
+model Suscripcion {
+  id              Int      @id @default(autoincrement())
+  plan            PlanSuscripcion
+  estado          EstadoSuscripcion @default(PRUEBA)
+  metodoPago      MetodoPago?
+  precioMensual   Int      @default(0)
+  fechaInicio     DateTime @default(now())
+  fechaVencimiento DateTime?
+  fechaCancelacion DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  negocioId Int
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+
+  facturas Factura[]
+
+  @@index([negocioId])
+  @@index([estado])
+}
+
+model Factura {
+  id          Int      @id @default(autoincrement())
+  numero      String   @unique
+  monto       Int
+  impuestos   Int      @default(0)
+  total       Int
+  estado      EstadoFactura @default(PENDIENTE)
+  fechaEmision DateTime @default(now())
+  fechaVencimiento DateTime
+  fechaPago   DateTime?
+  metodoPago  MetodoPago?
+  concepto    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  negocioId Int
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+
+  suscripcionId Int?
+  suscripcion   Suscripcion? @relation(fields: [suscripcionId], references: [id])
+
+  @@index([negocioId])
+  @@index([estado])
+}
+
+model Onboarding {
+  id          Int      @id @default(autoincrement())
+  estado      EstadoOnboarding @default(PENDIENTE)
+  pasoActual  Int      @default(0)
+  pasosCompletados Json   @default("[]")
+  iniciadoAt  DateTime @default(now())
+  completadoAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  negocioId Int     @unique
+  negocio   Negocio @relation(fields: [negocioId], references: [id])
+}
+
 
 model Negocio {
   id              Int      @id @default(autoincrement())
@@ -92,6 +180,10 @@ model Negocio {
   notificaciones  Notificacion[]
   historialConversacion HistorialConversacion[]
   auditorias      AuditoriaAcciones[]
+  suscripciones   Suscripcion[]
+  facturas        Factura[]
+  onboarding      Onboarding?
+  categorias      Categoria[]
   
   @@index([slug])
   @@index([estado])
@@ -115,6 +207,18 @@ model Cliente {
   movimientos  MovimientoCuenta[]
   
   @@unique([negocioId, telefono])
+  @@index([negocioId])
+}
+
+
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  createdAt DateTime @default(now())
+
+  negocioId Int      @default(1)
+  negocio   Negocio  @relation(fields: [negocioId], references: [id])
+
   @@index([negocioId])
 }
 
@@ -278,13 +382,14 @@ model MenuPlantillaDetalle {
 model MenuDiario {
   id Int @id @default(autoincrement())
 
-  fecha DateTime @unique
+  fecha DateTime
 
   negocioId Int      @default(1) // Valor por defecto para migración
   negocio   Negocio @relation(fields: [negocioId], references: [id])
 
   productos MenuDiarioDetalle[]
   
+  @@unique([negocioId, fecha])
   @@index([negocioId])
 }
 
@@ -318,7 +423,7 @@ model VentaAnonima {
 model CajaDiaria {
   id Int @id @default(autoincrement())
   
-  fecha DateTime @unique
+  fecha DateTime
   
   montoEfectivoEsperado Int @default(0)
   montoTransferenciaEsperado Int @default(0)
@@ -335,6 +440,7 @@ model CajaDiaria {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  @@unique([negocioId, fecha])
   @@index([negocioId])
 }
 

@@ -9,6 +9,7 @@ export async function crearVentaAnonima(req, res) {
         monto: Number(monto),
         descripcion,
         formaPago,
+        negocioId: req.negocioId || 1,
       },
     });
 
@@ -25,7 +26,7 @@ export async function listarVentasAnonimas(req, res) {
   try {
     const { fechaInicio, fechaFin } = req.query;
 
-    const where = {};
+    const where = { negocioId: req.negocioId || 1 };
     
     if (fechaInicio || fechaFin) {
       where.fecha = {};
@@ -82,6 +83,7 @@ export async function obtenerVentasAnonimasHoy(req, res) {
 
     const ventas = await prisma.ventaAnonima.findMany({
       where: {
+        negocioId: req.negocioId || 1,
         fecha: {
           gte: hoy,
           lt: manana,

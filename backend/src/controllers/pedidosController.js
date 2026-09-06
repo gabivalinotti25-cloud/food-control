@@ -38,6 +38,7 @@ export async function crearPedido(req, res) {
       data: {
         total: totalPedido,
         clienteId: Number(clienteId),
+        negocioId: req.negocioId || 1,
         estado: "ENTREGADO",
         estadoPago: estadoPago || "PAGADO",
         fecha: fechaPedido,
@@ -83,6 +84,7 @@ export async function crearPedido(req, res) {
       await prisma.movimientoCuenta.create({
         data: {
           clienteId: Number(clienteId),
+          negocioId: req.negocioId || 1,
           tipo: "CARGO",
           concepto: `Pedido #${pedido.id}${observacion ? ` - ${observacion}` : ""}`,
           monto: totalPedido,
@@ -106,7 +108,7 @@ export async function crearPedido(req, res) {
 export async function listarPedidos(req, res) {
   try {
     const { fecha } = req.query;
-    const where = {};
+    const where = { negocioId: req.negocioId || 1 };
 
     if (fecha) {
       const { inicio, fin } = parseFechaDia(fecha);
@@ -133,8 +135,8 @@ export async function listarPedidos(req, res) {
 export async function eliminarPedido(req, res) {
   try {
     const { id } = req.params;
-    const pedido = await prisma.pedido.findUnique({
-      where: { id: Number(id) },
+    const pedido = await prisma.pedido.findFirst({
+      where: { id: Number(id), negocioId: req.negocioId || 1 },
       include: { pago: true },
     });
 

@@ -5,6 +5,7 @@ export async function listarDeudas(req, res) {
     const deudas = await prisma.pedido.findMany({
       where: {
         estadoPago: "PENDIENTE",
+        negocioId: req.negocioId || 1,
       },
       include: {
         cliente: true,
@@ -33,6 +34,7 @@ export async function listarDeudasPorCliente(req, res) {
       where: {
         clienteId: Number(clienteId),
         estadoPago: "PENDIENTE",
+        negocioId: req.negocioId || 1,
       },
       include: {
         cliente: true,
@@ -57,8 +59,8 @@ export async function marcarPedidoPagado(req, res) {
   try {
     const { pedidoId, formaPago } = req.body;
 
-    const pedidoExistente = await prisma.pedido.findUnique({
-      where: { id: Number(pedidoId) },
+    const pedidoExistente = await prisma.pedido.findFirst({
+      where: { id: Number(pedidoId), negocioId: req.negocioId || 1 },
     });
 
     if (!pedidoExistente || pedidoExistente.estadoPago === "PAGADO") {
@@ -95,6 +97,7 @@ export async function marcarPedidoPagado(req, res) {
     await prisma.movimientoCuenta.create({
       data: {
         clienteId: pedido.clienteId,
+        negocioId: req.negocioId || 1,
         tipo: "ABONO",
         concepto: `Pago pedido #${pedidoId}`,
         monto: pedido.total,
@@ -120,6 +123,7 @@ export async function obtenerResumenDeudas(req, res) {
         saldo: {
           gt: 0,
         },
+        negocioId: req.negocioId || 1,
       },
       orderBy: {
         saldo: "desc",
@@ -147,8 +151,8 @@ export async function generarInformeCliente(req, res) {
   try {
     const { clienteId } = req.params;
 
-    const cliente = await prisma.cliente.findUnique({
-      where: { id: Number(clienteId) },
+    const cliente = await prisma.cliente.findFirst({
+      where: { id: Number(clienteId), negocioId: req.negocioId || 1 },
       include: {
         pedidos: {
           where: { estadoPago: "PENDIENTE" },

@@ -6,7 +6,7 @@ export async function obtenerHistorial(req, res) {
     
     const skip = (Number(pagina) - 1) * Number(limite);
     
-    const where = {};
+    const where = { negocioId: req.negocioId || 1 };
     
     if (origen) {
       where.origen = origen;
@@ -44,13 +44,16 @@ export async function obtenerHistorial(req, res) {
 
 export async function obtenerEstadisticas(req, res) {
   try {
+    const negocioId = req.negocioId || 1;
+
     const [total, aprobados, rechazados, pendientes, porOrigen] = await Promise.all([
-      prisma.historialConversacion.count(),
-      prisma.historialConversacion.count({ where: { aprobado: true } }),
-      prisma.historialConversacion.count({ where: { aprobado: false } }),
-      prisma.historialConversacion.count({ where: { aprobado: null } }),
+      prisma.historialConversacion.count({ where: { negocioId } }),
+      prisma.historialConversacion.count({ where: { aprobado: true, negocioId } }),
+      prisma.historialConversacion.count({ where: { aprobado: false, negocioId } }),
+      prisma.historialConversacion.count({ where: { aprobado: null, negocioId } }),
       prisma.historialConversacion.groupBy({
         by: ['origen'],
+        where: { negocioId },
         _count: true
       })
     ]);
@@ -58,7 +61,7 @@ export async function obtenerEstadisticas(req, res) {
     // Calcular patrones de acciones más comunes
     const acciones = await prisma.historialConversacion.groupBy({
       by: ['accionPropuesta'],
-      where: { aprobado: true },
+      where: { aprobado: true, negocioId },
       _count: true,
       orderBy: { _count: { accionPropuesta: 'desc' } },
       take: 10
@@ -82,7 +85,7 @@ export async function obtenerPatrones(req, res) {
   try {
     // Obtener conversaciones aprobadas para aprendizaje
     const conversaciones = await prisma.historialConversacion.findMany({
-      where: { aprobado: true },
+      where: { aprobado: true, negocioId: req.negocioId || 1 },
       orderBy: { createdAt: 'desc' },
       take: 100
     });
@@ -135,6 +138,7 @@ export async function limpiarHistorialAntiguo(req, res) {
     
     const resultado = await prisma.historialConversacion.deleteMany({
       where: {
+        negocioId: req.negocioId || 1,
         createdAt: {
           lt: fechaLimite
         }

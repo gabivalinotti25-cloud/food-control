@@ -7,6 +7,7 @@ export async function obtenerEstadisticasGenerales(req, res) {
 
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    const negocioId = req.negocioId || 1;
 
     const [
       totalClientes,
@@ -15,11 +16,12 @@ export async function obtenerEstadisticasGenerales(req, res) {
       clientesActivos,
       productosActivos,
     ] = await Promise.all([
-      prisma.cliente.count(),
-      prisma.producto.count(),
-      prisma.pedido.count(),
+      prisma.cliente.count({ where: { negocioId } }),
+      prisma.producto.count({ where: { negocioId } }),
+      prisma.pedido.count({ where: { negocioId } }),
       prisma.cliente.count({
         where: {
+          negocioId,
           pedidos: {
             some: {
               fecha: {
@@ -32,6 +34,7 @@ export async function obtenerEstadisticasGenerales(req, res) {
       prisma.producto.count({
         where: {
           activo: true,
+          negocioId,
         },
       }),
     ]);
@@ -82,6 +85,7 @@ export async function obtenerVentasPorPeriodo(req, res) {
 
     const pedidos = await prisma.pedido.findMany({
       where: {
+        negocioId: req.negocioId || 1,
         fecha: {
           gte: fechaInicio,
           lte: fechaFin,
@@ -102,6 +106,7 @@ export async function obtenerVentasPorPeriodo(req, res) {
 
     const ventasAnonimas = await prisma.ventaAnonima.findMany({
       where: {
+        negocioId: req.negocioId || 1,
         fecha: {
           gte: fechaInicio,
           lte: fechaFin,
@@ -180,6 +185,7 @@ export async function obtenerProductosMasVendidos(req, res) {
     const detalles = await prisma.pedidoDetalle.findMany({
       where: {
         pedido: {
+          negocioId: req.negocioId || 1,
           fecha: {
             gte: fechaInicio,
           },
@@ -241,6 +247,7 @@ export async function obtenerClientesFrecuentes(req, res) {
 
     const pedidos = await prisma.pedido.findMany({
       where: {
+        negocioId: req.negocioId || 1,
         fecha: {
           gte: fechaInicio,
         },
@@ -286,9 +293,12 @@ export async function obtenerReporteDiario(req, res) {
     const manana = new Date(fechaBusqueda);
     manana.setDate(manana.getDate() + 1);
 
+    const negocioId = req.negocioId || 1;
+
     const [pedidos, ventasAnonimas, clientesConDeuda] = await Promise.all([
       prisma.pedido.findMany({
         where: {
+          negocioId,
           fecha: {
             gte: fechaBusqueda,
             lt: manana,
@@ -306,6 +316,7 @@ export async function obtenerReporteDiario(req, res) {
       }),
       prisma.ventaAnonima.findMany({
         where: {
+          negocioId,
           fecha: {
             gte: fechaBusqueda,
             lt: manana,
@@ -314,6 +325,7 @@ export async function obtenerReporteDiario(req, res) {
       }),
       prisma.cliente.findMany({
         where: {
+          negocioId,
           saldo: {
             gt: 0,
           },
@@ -370,6 +382,7 @@ export async function obtenerTendenciasVentas(req, res) {
     hoy.setHours(0, 0, 0, 0);
 
     const datos = [];
+    const negocioId = req.negocioId || 1;
 
     for (let i = cantidadDias - 1; i >= 0; i--) {
       const fecha = new Date(hoy);
@@ -381,6 +394,7 @@ export async function obtenerTendenciasVentas(req, res) {
       const [pedidos, ventasAnonimas] = await Promise.all([
         prisma.pedido.findMany({
           where: {
+            negocioId,
             fecha: {
               gte: fecha,
               lt: manana,
@@ -389,6 +403,7 @@ export async function obtenerTendenciasVentas(req, res) {
         }),
         prisma.ventaAnonima.findMany({
           where: {
+            negocioId,
             fecha: {
               gte: fecha,
               lt: manana,

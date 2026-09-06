@@ -1,11 +1,11 @@
 import prisma from "../prisma.js";
 import { parseFechaDia, fechaDiaExacta, hoyISO } from "../utils/fechas.js";
 
-async function obtenerOCrearMenu(fechaStr) {
+async function obtenerOCrearMenu(fechaStr, negocioId = 1) {
   const fecha = fechaDiaExacta(fechaStr || hoyISO());
 
-  let menu = await prisma.menuDiario.findUnique({
-    where: { fecha },
+  let menu = await prisma.menuDiario.findFirst({
+    where: { fecha, negocioId },
     include: {
       productos: {
         include: { producto: true },
@@ -16,7 +16,7 @@ async function obtenerOCrearMenu(fechaStr) {
 
   if (!menu) {
     menu = await prisma.menuDiario.create({
-      data: { fecha },
+      data: { fecha, negocioId },
       include: {
         productos: { include: { producto: true } },
       },
@@ -29,7 +29,7 @@ async function obtenerOCrearMenu(fechaStr) {
 export async function obtenerMenu(req, res) {
   try {
     const fecha = req.query.fecha || hoyISO();
-    const menu = await obtenerOCrearMenu(fecha);
+    const menu = await obtenerOCrearMenu(fecha, req.negocioId || 1);
     res.json(menu);
   } catch (error) {
     console.error(error);
@@ -40,12 +40,12 @@ export async function obtenerMenu(req, res) {
 export async function copiarProductosFijos(req, res) {
   try {
     const fecha = req.body.fecha || req.query.fecha || hoyISO();
-    const menu = await obtenerOCrearMenu(fecha);
+    const menu = await obtenerOCrearMenu(fecha, req.negocioId || 1);
 
     await prisma.menuDiarioDetalle.deleteMany({ where: { menuId: menu.id } });
 
     const productos = await prisma.producto.findMany({
-      where: { activo: true, esFijo: true },
+      where: { activo: true, esFijo: true, negocioId: req.negocioId || 1 },
       orderBy: [{ orden: "asc" }, { nombre: "asc" }],
     });
 
@@ -70,7 +70,7 @@ export async function copiarProductosFijos(req, res) {
 export async function agregarProductoMenu(req, res) {
   try {
     const { productoId, fecha } = req.body;
-    const menu = await obtenerOCrearMenu(fecha || hoyISO());
+    const menu = await obtenerOCrearMenu(fecha || hoyISO(), req.negocioId || 1);
 
     const existe = await prisma.menuDiarioDetalle.findFirst({
       where: { menuId: menu.id, productoId: Number(productoId) },
@@ -94,7 +94,7 @@ export async function agregarProductoMenu(req, res) {
 export async function agregarMontoLibreMenu(req, res) {
   try {
     const { nombre, precio, fecha } = req.body;
-    const menu = await obtenerOCrearMenu(fecha || hoyISO());
+    const menu = await obtenerOCrearMenu(fecha || hoyISO(), req.negocioId || 1);
 
     const producto = await prisma.producto.create({
       data: {
@@ -104,6 +104,7 @@ export async function agregarMontoLibreMenu(req, res) {
         esFijo: false,
         esEspecial: false,
         activo: true,
+        negocioId: req.negocioId || 1,
       },
     });
 
@@ -137,7 +138,7 @@ export async function listarMenusMes(req, res) {
     const fin = new Date(y, m, 1);
 
     const menus = await prisma.menuDiario.findMany({
-      where: { fecha: { gte: inicio, lt: fin } },
+      where: { fecha: { gte: inicio, lt: fin }, negocioId: req.negocioId || 1 },
       include: {
         productos: true,
         _count: { select: { productos: true } },
@@ -146,7 +147,7 @@ export async function listarMenusMes(req, res) {
 
     const pedidosPorDia = await prisma.pedido.groupBy({
       by: ["fecha"],
-      where: { fecha: { gte: inicio, lt: fin } },
+      where: { fecha: { gte: inicio, lt: fin }, negocioId: req.negocioId || 1 },
       _count: true,
       _sum: { total: true },
     });

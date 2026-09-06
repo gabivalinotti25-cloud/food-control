@@ -10,6 +10,7 @@ export async function crearCliente(req, res) {
         telefono,
         direccion,
         observacion,
+        negocioId: req.negocioId || 1,
       },
     });
 
@@ -25,6 +26,7 @@ export async function crearCliente(req, res) {
 export async function listarClientes(req, res) {
   try {
     const clientes = await prisma.cliente.findMany({
+      where: { negocioId: req.negocioId || 1 },
       orderBy: {
         nombre: "asc",
       },
@@ -45,7 +47,7 @@ export async function editarCliente(req, res) {
     const { nombre, telefono, direccion, observacion } = req.body;
 
     const cliente = await prisma.cliente.update({
-      where: { id },
+      where: { id, negocioId: req.negocioId || 1 },
       data: {
         nombre,
         telefono,
@@ -68,8 +70,8 @@ export async function eliminarCliente(req, res) {
     const id = Number(req.params.id);
 
     // Verificar si el cliente existe
-    const cliente = await prisma.cliente.findUnique({
-      where: { id },
+    const cliente = await prisma.cliente.findFirst({
+      where: { id, negocioId: req.negocioId || 1 },
       include: {
         pedidos: {
           include: {

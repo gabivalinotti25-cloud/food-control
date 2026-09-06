@@ -4,6 +4,7 @@ import prisma from "../prisma.js";
 export async function listarProductos(req, res) {
   try {
     const productos = await prisma.producto.findMany({
+      where: { negocioId: req.negocioId || 1 },
       orderBy: [
         { orden: "asc" },
         { nombre: "asc" }
@@ -39,6 +40,7 @@ export async function crearProducto(req, res) {
         esLibre,
         esFijo,
         esEspecial,
+        negocioId: req.negocioId || 1,
       },
     });
 
@@ -67,7 +69,7 @@ export async function editarProducto(req, res) {
     } = req.body;
 
     const producto = await prisma.producto.update({
-      where: { id },
+      where: { id, negocioId: req.negocioId || 1 },
       data: {
         nombre,
         precio: Number(precio),
@@ -97,9 +99,13 @@ export async function cambiarEstadoProducto(req, res) {
 
     const id = Number(req.params.id);
 
-    const producto = await prisma.producto.findUnique({
-      where: { id }
+    const producto = await prisma.producto.findFirst({
+      where: { id, negocioId: req.negocioId || 1 }
     });
+
+    if (!producto) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
 
     const actualizado = await prisma.producto.update({
       where: { id },
@@ -128,8 +134,8 @@ export async function eliminarProducto(req, res) {
     const id = Number(req.params.id);
 
     // Verificar si el producto existe
-    const producto = await prisma.producto.findUnique({
-      where: { id },
+    const producto = await prisma.producto.findFirst({
+      where: { id, negocioId: req.negocioId || 1 },
       include: {
         detallesPedido: true,
         menus: true,

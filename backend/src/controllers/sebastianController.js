@@ -166,7 +166,8 @@ export async function procesarMensaje(req, res) {
         descripcion: resultado.descripcion,
         datos: resultado.datos,
         confianza: resultado.confianza,
-        estado: 'PENDIENTE'
+        estado: 'PENDIENTE',
+        negocioId: req.negocioId || 1
       }
     });
     
@@ -180,7 +181,8 @@ export async function procesarMensaje(req, res) {
           accionPropuesta: resultado.accion,
           datosPropuesta: resultado.datos,
           confianza: resultado.confianza,
-          aprobado: null
+          aprobado: null,
+          negocioId: req.negocioId || 1
         }
       });
     } catch (error) {
@@ -279,7 +281,8 @@ export async function webhookWhatsApp(req, res) {
         datos: resultado.datos,
         confianza: resultado.confianza,
         estado: 'PENDIENTE',
-        respuestaIA: response.message.content
+        respuestaIA: response.message.content,
+        negocioId: req.negocioId || 1
       }
     });
     
@@ -320,6 +323,7 @@ export async function verificarWebhook(req, res) {
 export async function listarPropuestas(req, res) {
   try {
     const propuestas = await prisma.propuestaSebastian.findMany({
+      where: { negocioId: req.negocioId || 1 },
       orderBy: { createdAt: 'desc' },
       take: 50
     });
@@ -335,8 +339,8 @@ export async function aprobarPropuesta(req, res) {
     const { id } = req.params;
     const { corregirDatos } = req.body;
     
-    const propuesta = await prisma.propuestaSebastian.findUnique({
-      where: { id: Number(id) }
+    const propuesta = await prisma.propuestaSebastian.findFirst({
+      where: { id: Number(id), negocioId: req.negocioId || 1 }
     });
     
     if (!propuesta) {
@@ -347,6 +351,8 @@ export async function aprobarPropuesta(req, res) {
       return res.status(400).json({ error: 'Propuesta ya procesada' });
     }
     
+    const negocioId = req.negocioId || 1;
+    
     // Usar datos corregidos si se proporcionaron
     const datos = corregirDatos || propuesta.datos;
     
@@ -354,49 +360,49 @@ export async function aprobarPropuesta(req, res) {
     let resultado;
     switch (propuesta.accion) {
       case 'crear_cliente':
-        resultado = await ejecutarCrearCliente(datos);
+        resultado = await ejecutarCrearCliente(datos, negocioId);
         break;
       case 'editar_cliente':
-        resultado = await ejecutarEditarCliente(datos);
+        resultado = await ejecutarEditarCliente(datos, negocioId);
         break;
       case 'eliminar_cliente':
-        resultado = await ejecutarEliminarCliente(datos);
+        resultado = await ejecutarEliminarCliente(datos, negocioId);
         break;
       case 'crear_producto':
-        resultado = await ejecutarCrearProducto(datos);
+        resultado = await ejecutarCrearProducto(datos, negocioId);
         break;
       case 'crear_productos':
-        resultado = await ejecutarCrearProductos(datos);
+        resultado = await ejecutarCrearProductos(datos, negocioId);
         break;
       case 'editar_producto':
-        resultado = await ejecutarEditarProducto(datos);
+        resultado = await ejecutarEditarProducto(datos, negocioId);
         break;
       case 'eliminar_producto':
-        resultado = await ejecutarEliminarProducto(datos);
+        resultado = await ejecutarEliminarProducto(datos, negocioId);
         break;
       case 'crear_pedido':
-        resultado = await ejecutarCrearPedido(datos);
+        resultado = await ejecutarCrearPedido(datos, negocioId);
         break;
       case 'editar_pedido':
-        resultado = await ejecutarEditarPedido(datos);
+        resultado = await ejecutarEditarPedido(datos, negocioId);
         break;
       case 'cancelar_pedido':
-        resultado = await ejecutarCancelarPedido(datos);
+        resultado = await ejecutarCancelarPedido(datos, negocioId);
         break;
       case 'venta_anonima':
-        resultado = await ejecutarVentaAnonima(datos);
+        resultado = await ejecutarVentaAnonima(datos, negocioId);
         break;
       case 'registrar_pago':
-        resultado = await ejecutarRegistrarPago(datos);
+        resultado = await ejecutarRegistrarPago(datos, negocioId);
         break;
       case 'consultar_clientes':
-        resultado = await ejecutarConsultarClientes(datos);
+        resultado = await ejecutarConsultarClientes(datos, negocioId);
         break;
       case 'consultar_productos':
-        resultado = await ejecutarConsultarProductos(datos);
+        resultado = await ejecutarConsultarProductos(datos, negocioId);
         break;
       case 'consultar_deudas':
-        resultado = await ejecutarConsultarDeudas(datos);
+        resultado = await ejecutarConsultarDeudas(datos, negocioId);
         break;
       case 'consulta_general':
         resultado = { tipo: 'consulta_general', respuesta: 'Consulta procesada - ver resultado en datos', datos: datos };
@@ -450,8 +456,8 @@ export async function rechazarPropuesta(req, res) {
     const { id } = req.params;
     const { motivo } = req.body;
     
-    const propuesta = await prisma.propuestaSebastian.findUnique({
-      where: { id: Number(id) }
+    const propuesta = await prisma.propuestaSebastian.findFirst({
+      where: { id: Number(id), negocioId: req.negocioId || 1 }
     });
     
     await prisma.propuestaSebastian.update({
@@ -487,40 +493,41 @@ export async function rechazarPropuesta(req, res) {
 }
 
 // Funciones auxiliares para ejecutar acciones
-async function ejecutarCrearCliente(datos) {
+async function ejecutarCrearCliente(datos, negocioId = 1) {
   const cliente = await prisma.cliente.create({
     data: {
       nombre: datos.nombre,
       telefono: datos.telefono || 'SIN TELEFONO',
       direccion: datos.direccion,
-      observacion: datos.observacion
+      observacion: datos.observacion,
+      negocioId
     }
   });
   return { tipo: 'cliente', id: cliente.id, nombre: cliente.nombre };
 }
 
-async function ejecutarEditarCliente(datos) {
+async function ejecutarEditarCliente(datos, negocioId = 1) {
   const cliente = await prisma.cliente.update({
-    where: { id: Number(datos.id) },
+    where: { id: Number(datos.id), negocioId },
     data: { [datos.campo]: datos.valor }
   });
   return { tipo: 'cliente_editado', id: cliente.id, nombre: cliente.nombre };
 }
 
-async function ejecutarEliminarCliente(datos) {
+async function ejecutarEliminarCliente(datos, negocioId = 1) {
   // Implementar lógica de cascada como en clientesController
   const id = Number(datos.id);
   
-  await prisma.movimientoCuenta.deleteMany({ where: { clienteId: id } });
-  await prisma.pago.deleteMany({ where: { pedido: { clienteId: id } } });
-  await prisma.pedidoDetalle.deleteMany({ where: { pedido: { clienteId: id } } });
-  await prisma.pedido.deleteMany({ where: { clienteId: id } });
+  await prisma.movimientoCuenta.deleteMany({ where: { clienteId: id, negocioId } });
+  await prisma.pago.deleteMany({ where: { pedido: { clienteId: id, negocioId } } });
+  await prisma.pedidoDetalle.deleteMany({ where: { pedido: { clienteId: id, negocioId } } });
+  await prisma.pedido.deleteMany({ where: { clienteId: id, negocioId } });
   await prisma.cliente.delete({ where: { id } });
   
   return { tipo: 'cliente_eliminado', id };
 }
 
-async function ejecutarCrearProducto(datos) {
+async function ejecutarCrearProducto(datos, negocioId = 1) {
   const producto = await prisma.producto.create({
     data: {
       nombre: datos.nombre,
@@ -528,13 +535,14 @@ async function ejecutarCrearProducto(datos) {
       esFijo: datos.esFijo || false,
       esLibre: datos.esLibre || false,
       esEspecial: datos.esEspecial || false,
-      activo: true
+      activo: true,
+      negocioId
     }
   });
   return { tipo: 'producto', id: producto.id, nombre: producto.nombre };
 }
 
-async function ejecutarCrearProductos(datos) {
+async function ejecutarCrearProductos(datos, negocioId = 1) {
   const productos = datos.productos || [];
   const resultados = [];
   
@@ -547,7 +555,8 @@ async function ejecutarCrearProductos(datos) {
           esFijo: prod.esFijo || false,
           esLibre: prod.esLibre || false,
           esEspecial: prod.esEspecial || false,
-          activo: true
+          activo: true,
+          negocioId
         }
       });
       resultados.push({ id: producto.id, nombre: producto.nombre, precio: producto.precio });
@@ -564,9 +573,9 @@ async function ejecutarCrearProductos(datos) {
   };
 }
 
-async function ejecutarEditarProducto(datos) {
+async function ejecutarEditarProducto(datos, negocioId = 1) {
   const producto = await prisma.producto.update({
-    where: { id: Number(datos.id) },
+    where: { id: Number(datos.id), negocioId },
     data: { [datos.campo]: datos.valor }
   });
   return { tipo: 'producto_editado', id: producto.id, nombre: producto.nombre };
@@ -583,9 +592,9 @@ async function ejecutarEliminarProducto(datos) {
   return { tipo: 'producto_eliminado', id };
 }
 
-async function ejecutarCrearPedido(datos) {
+async function ejecutarCrearPedido(datos, negocioId = 1) {
   const cliente = await prisma.cliente.findFirst({
-    where: { nombre: { contains: datos.clienteNombre, mode: 'insensitive' } }
+    where: { nombre: { contains: datos.clienteNombre, mode: 'insensitive' }, negocioId }
   });
   
   if (!cliente) {
@@ -597,6 +606,7 @@ async function ejecutarCrearPedido(datos) {
   const pedido = await prisma.pedido.create({
     data: {
       clienteId: cliente.id,
+      negocioId,
       total,
       estado: 'PENDIENTE',
       estadoPago: 'PENDIENTE',
@@ -617,37 +627,38 @@ async function ejecutarCrearPedido(datos) {
   return { tipo: 'pedido', id: pedido.id, cliente: cliente.nombre, total };
 }
 
-async function ejecutarEditarPedido(datos) {
+async function ejecutarEditarPedido(datos, negocioId = 1) {
   const pedido = await prisma.pedido.update({
-    where: { id: Number(datos.id) },
+    where: { id: Number(datos.id), negocioId },
     data: { [datos.campo]: datos.valor }
   });
   return { tipo: 'pedido_editado', id: pedido.id };
 }
 
-async function ejecutarCancelarPedido(datos) {
+async function ejecutarCancelarPedido(datos, negocioId = 1) {
   await prisma.pedido.update({
-    where: { id: Number(datos.id) },
+    where: { id: Number(datos.id), negocioId },
     data: { estado: 'CANCELADO' }
   });
   return { tipo: 'pedido_cancelado', id: datos.id };
 }
 
-async function ejecutarVentaAnonima(datos) {
+async function ejecutarVentaAnonima(datos, negocioId = 1) {
   const venta = await prisma.ventaAnonima.create({
     data: {
       monto: Number(datos.monto),
       formaPago: datos.formaPago,
       descripcion: datos.descripcion,
-      fecha: new Date()
+      fecha: new Date(),
+      negocioId
     }
   });
   return { tipo: 'venta_anonima', id: venta.id, monto: venta.monto };
 }
 
-async function ejecutarRegistrarPago(datos) {
+async function ejecutarRegistrarPago(datos, negocioId = 1) {
   const cliente = await prisma.cliente.findFirst({
-    where: { nombre: { contains: datos.clienteNombre, mode: 'insensitive' } }
+    where: { nombre: { contains: datos.clienteNombre, mode: 'insensitive' }, negocioId }
   });
   
   if (!cliente) {
@@ -657,6 +668,7 @@ async function ejecutarRegistrarPago(datos) {
   const movimiento = await prisma.movimientoCuenta.create({
     data: {
       clienteId: cliente.id,
+      negocioId,
       tipo: 'ABONO',
       concepto: 'Pago registrado por Sebastian',
       monto: Number(datos.monto),
@@ -674,28 +686,27 @@ async function ejecutarRegistrarPago(datos) {
   return { tipo: 'pago_registrado', id: movimiento.id, cliente: cliente.nombre };
 }
 
-async function ejecutarConsultarClientes(datos) {
+async function ejecutarConsultarClientes(datos, negocioId = 1) {
   const clientes = await prisma.cliente.findMany({
-    where: datos.filtro ? { nombre: { contains: datos.filtro, mode: 'insensitive' } } : undefined,
+    where: datos.filtro ? { nombre: { contains: datos.filtro, mode: 'insensitive' }, negocioId } : { negocioId },
     orderBy: datos.orden || { nombre: 'asc' },
     take: 20
   });
   return { tipo: 'consulta_clientes', cantidad: clientes.length, clientes: clientes.map(c => ({ id: c.id, nombre: c.nombre, telefono: c.telefono })) };
 }
 
-async function ejecutarConsultarProductos(datos) {
+async function ejecutarConsultarProductos(datos, negocioId = 1) {
   const productos = await prisma.producto.findMany({
-    where: datos.filtro ? { nombre: { contains: datos.filtro, mode: 'insensitive' } } : undefined,
-    where: { activo: true },
+    where: datos.filtro ? { nombre: { contains: datos.filtro, mode: 'insensitive' }, activo: true, negocioId } : { activo: true, negocioId },
     orderBy: datos.orden || { nombre: 'asc' },
     take: 20
   });
   return { tipo: 'consulta_productos', cantidad: productos.length, productos: productos.map(p => ({ id: p.id, nombre: p.nombre, precio: p.precio })) };
 }
 
-async function ejecutarConsultarDeudas(datos) {
+async function ejecutarConsultarDeudas(datos, negocioId = 1) {
   const cliente = await prisma.cliente.findFirst({
-    where: { nombre: { contains: datos.clienteNombre, mode: 'insensitive' } }
+    where: { nombre: { contains: datos.clienteNombre, mode: 'insensitive' }, negocioId }
   });
   
   if (!cliente) {

@@ -3,8 +3,12 @@ import prisma from "../prisma.js";
 export async function obtenerNotificaciones(req, res) {
   try {
     const { soloNoLeidas } = req.query;
+    const negocioId = req.negocioId || 1;
     
-    const where = soloNoLeidas === 'true' ? { leida: false } : {};
+    const where = { negocioId };
+    if (soloNoLeidas === 'true') {
+      where.leida = false;
+    }
     
     const notificaciones = await prisma.notificacion.findMany({
       where,
@@ -13,7 +17,7 @@ export async function obtenerNotificaciones(req, res) {
     });
     
     const noLeidasCount = await prisma.notificacion.count({
-      where: { leida: false }
+      where: { leida: false, negocioId }
     });
     
     res.json({
@@ -45,7 +49,7 @@ export async function marcarComoLeida(req, res) {
 export async function marcarTodasComoLeidas(req, res) {
   try {
     await prisma.notificacion.updateMany({
-      where: { leida: false },
+      where: { leida: false, negocioId: req.negocioId || 1 },
       data: { leida: true }
     });
     
@@ -66,7 +70,8 @@ export async function crearNotificacion(req, res) {
         titulo,
         mensaje,
         link,
-        datos
+        datos,
+        negocioId: req.negocioId || 1
       }
     });
     
@@ -93,7 +98,7 @@ export async function eliminarNotificacion(req, res) {
 }
 
 // Función auxiliar para crear notificaciones desde otros controladores
-export async function notificar(tipo, titulo, mensaje, link = null, datos = null) {
+export async function notificar(tipo, titulo, mensaje, link = null, datos = null, negocioId = 1) {
   try {
     await prisma.notificacion.create({
       data: {
@@ -101,7 +106,8 @@ export async function notificar(tipo, titulo, mensaje, link = null, datos = null
         titulo,
         mensaje,
         link,
-        datos
+        datos,
+        negocioId
       }
     });
     console.log(`✅ Notificación creada: ${titulo}`);

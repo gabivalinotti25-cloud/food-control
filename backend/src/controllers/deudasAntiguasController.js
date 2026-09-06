@@ -7,6 +7,7 @@ export async function registrarDeudaAntigua(req, res) {
     await prisma.movimientoCuenta.create({
       data: {
         clienteId: Number(clienteId),
+        negocioId: req.negocioId || 1,
         tipo: "CARGO",
         concepto,
         monto: Number(monto),

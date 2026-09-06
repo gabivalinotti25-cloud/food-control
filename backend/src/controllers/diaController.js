@@ -5,10 +5,11 @@ export async function obtenerDia(req, res) {
   try {
     const fecha = req.params.fecha || hoyISO();
     const { inicio, fin } = parseFechaDia(fecha);
+    const negocioId = req.negocioId || 1;
 
     const [pedidos, menu, clientesConDeuda] = await Promise.all([
       prisma.pedido.findMany({
-        where: { fecha: { gte: inicio, lt: fin } },
+        where: { fecha: { gte: inicio, lt: fin }, negocioId },
         include: {
           cliente: true,
           pago: true,
@@ -16,14 +17,14 @@ export async function obtenerDia(req, res) {
         },
         orderBy: { fecha: "asc" },
       }),
-      prisma.menuDiario.findUnique({
-        where: { fecha: inicio },
+      prisma.menuDiario.findFirst({
+        where: { fecha: inicio, negocioId },
         include: {
           productos: { include: { producto: true } },
         },
       }),
       prisma.cliente.findMany({
-        where: { saldo: { gt: 0 } },
+        where: { saldo: { gt: 0 }, negocioId },
         orderBy: { saldo: "desc" },
       }),
     ]);

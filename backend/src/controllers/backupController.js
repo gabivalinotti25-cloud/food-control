@@ -2,6 +2,8 @@ import prisma from "../prisma.js";
 
 export async function exportarDatos(req, res) {
   try {
+    const negocioId = req.negocioId || 1;
+
     const [
       clientes,
       productos,
@@ -11,9 +13,10 @@ export async function exportarDatos(req, res) {
       cajas,
       configuracionesMenu,
     ] = await Promise.all([
-      prisma.cliente.findMany(),
-      prisma.producto.findMany(),
+      prisma.cliente.findMany({ where: { negocioId } }),
+      prisma.producto.findMany({ where: { negocioId } }),
       prisma.pedido.findMany({
+        where: { negocioId },
         include: {
           cliente: true,
           pago: true,
@@ -25,13 +28,14 @@ export async function exportarDatos(req, res) {
         },
       }),
       prisma.movimientoCuenta.findMany({
+        where: { negocioId },
         include: {
           cliente: true,
         },
       }),
-      prisma.ventaAnonima.findMany(),
-      prisma.cajaDiaria.findMany(),
-      prisma.configuracionMenu.findMany(),
+      prisma.ventaAnonima.findMany({ where: { negocioId } }),
+      prisma.cajaDiaria.findMany({ where: { negocioId } }),
+      prisma.configuracionMenu.findMany({ where: { negocioId } }),
     ]);
 
     const datos = {
@@ -57,6 +61,7 @@ export async function exportarDatos(req, res) {
 export async function exportarClientes(req, res) {
   try {
     const clientes = await prisma.cliente.findMany({
+      where: { negocioId: req.negocioId || 1 },
       include: {
         pedidos: true,
         movimientos: true,
@@ -76,7 +81,7 @@ export async function exportarPedidos(req, res) {
   try {
     const { fechaInicio, fechaFin } = req.query;
 
-    const where = {};
+    const where = { negocioId: req.negocioId || 1 };
     if (fechaInicio || fechaFin) {
       where.fecha = {};
       if (fechaInicio) {
@@ -121,9 +126,12 @@ export async function exportarReporteExcel(req, res) {
     const manana = new Date(fechaBusqueda);
     manana.setDate(manana.getDate() + 1);
 
+    const negocioId = req.negocioId || 1;
+
     const [pedidos, ventasAnonimas] = await Promise.all([
       prisma.pedido.findMany({
         where: {
+          negocioId,
           fecha: {
             gte: fechaBusqueda,
             lt: manana,
@@ -141,6 +149,7 @@ export async function exportarReporteExcel(req, res) {
       }),
       prisma.ventaAnonima.findMany({
         where: {
+          negocioId,
           fecha: {
             gte: fechaBusqueda,
             lt: manana,
@@ -211,6 +220,8 @@ export async function exportarReporteExcel(req, res) {
 
 export async function obtenerEstadisticasSistema(req, res) {
   try {
+    const negocioId = req.negocioId || 1;
+
     const [
       totalClientes,
       totalProductos,
@@ -219,16 +230,17 @@ export async function obtenerEstadisticasSistema(req, res) {
       totalMovimientos,
       totalCajas,
     ] = await Promise.all([
-      prisma.cliente.count(),
-      prisma.producto.count(),
-      prisma.pedido.count(),
-      prisma.ventaAnonima.count(),
-      prisma.movimientoCuenta.count(),
-      prisma.cajaDiaria.count(),
+      prisma.cliente.count({ where: { negocioId } }),
+      prisma.producto.count({ where: { negocioId } }),
+      prisma.pedido.count({ where: { negocioId } }),
+      prisma.ventaAnonima.count({ where: { negocioId } }),
+      prisma.movimientoCuenta.count({ where: { negocioId } }),
+      prisma.cajaDiaria.count({ where: { negocioId } }),
     ]);
 
     const clientesConDeuda = await prisma.cliente.count({
       where: {
+        negocioId,
         saldo: {
           gt: 0,
         },
@@ -237,6 +249,7 @@ export async function obtenerEstadisticasSistema(req, res) {
 
     const sumaDeuda = await prisma.cliente.aggregate({
       where: {
+        negocioId,
         saldo: {
           gt: 0,
         },

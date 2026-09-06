@@ -5,9 +5,10 @@ export async function obtenerCuenta(req, res) {
   try {
     const clienteId = Number(req.params.clienteId);
 
-    const cliente = await prisma.cliente.findUnique({
+    const cliente = await prisma.cliente.findFirst({
       where: {
         id: clienteId,
+        negocioId: req.negocioId || 1,
       },
       include: {
         movimientos: {
@@ -43,6 +44,7 @@ export async function crearMovimiento(req, res) {
     const movimiento = await prisma.movimientoCuenta.create({
       data: {
         clienteId: Number(clienteId),
+        negocioId: req.negocioId || 1,
         tipo,
         concepto,
         monto: Number(monto),

@@ -9,13 +9,14 @@ export async function obtenerResumenCaja(req, res) {
     }
 
     const { inicio, fin } = parseFechaDia(fecha);
+    const negocioId = req.negocioId || 1;
 
     const [pedidos, caja] = await Promise.all([
       prisma.pedido.findMany({
-        where: { fecha: { gte: inicio, lt: fin } },
+        where: { fecha: { gte: inicio, lt: fin }, negocioId },
         include: { cliente: true, pago: true, detalles: true },
       }),
-      prisma.cajaDiaria.findUnique({ where: { fecha: inicio } }),
+      prisma.cajaDiaria.findFirst({ where: { fecha: inicio, negocioId } }),
     ]);
 
     const pagados = pedidos.filter((p) => p.estadoPago === "PAGADO");
@@ -53,10 +54,11 @@ export async function crearOCrearCajaDiaria(req, res) {
       ? parseFechaDia(fechaStr)
       : parseFechaDia(new Date().toISOString().split("T")[0]);
 
-    let caja = await prisma.cajaDiaria.findUnique({ where: { fecha: inicio } });
+    const negocioId = req.negocioId || 1;
+    let caja = await prisma.cajaDiaria.findFirst({ where: { fecha: inicio, negocioId } });
 
     if (!caja) {
-      caja = await prisma.cajaDiaria.create({ data: { fecha: inicio } });
+      caja = await prisma.cajaDiaria.create({ data: { fecha: inicio, negocioId } });
     }
 
     res.json(caja);
@@ -103,6 +105,7 @@ export async function cerrarCaja(req, res) {
 export async function listarCajas(req, res) {
   try {
     const cajas = await prisma.cajaDiaria.findMany({
+      where: { negocioId: req.negocioId || 1 },
       orderBy: { fecha: "desc" },
       take: 30,
     });

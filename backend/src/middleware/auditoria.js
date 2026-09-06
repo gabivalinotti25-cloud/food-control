@@ -2,13 +2,15 @@ import prisma from "../prisma.js";
 
 export async function registrarAuditoria(req, accion, entidad, entidadId, descripcion, datosAntes = null, datosDespues = null) {
   try {
-    const usuarioId = req.user?.id || null;
+    const usuarioId = req.usuario?.id || req.user?.id || null;
+    const negocioId = req.negocioId || req.usuario?.negocioId || 1;
     const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'] || null;
 
     await prisma.auditoriaAcciones.create({
       data: {
         usuarioId,
+        negocioId,
         accion,
         entidad,
         entidadId,
@@ -31,7 +33,7 @@ export async function listarAuditoria(req, res) {
   try {
     const { usuarioId, accion, fechaDesde, fechaHasta } = req.query;
     
-    const where = {};
+    const where = { negocioId: req.negocioId || 1 };
     
     if (usuarioId) {
       where.usuarioId = Number(usuarioId);

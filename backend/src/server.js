@@ -23,6 +23,11 @@ import notificacionesRoutes from "./routes/notificaciones.js";
 import historialRoutes from "./routes/historial.js";
 import auditoriaRoutes from "./routes/auditoria.js";
 import monitoreoRoutes from "./routes/monitoreo.js";
+import negociosRoutes from "./routes/negocios.js";
+import suscripcionesRoutes from "./routes/suscripciones.js";
+import facturacionRoutes from "./routes/facturacion.js";
+import onboardingRoutes from "./routes/onboarding.js";
+import personalizacionRoutes from "./routes/personalizacion.js";
 
 const app = express();
 
@@ -59,6 +64,11 @@ app.use("/notificaciones", notificacionesRoutes);
 app.use("/historial", historialRoutes);
 app.use("/auditoria", auditoriaRoutes);
 app.use("/monitoreo", monitoreoRoutes);
+app.use("/negocios", negociosRoutes);
+app.use("/suscripciones", suscripcionesRoutes);
+app.use("/facturacion", facturacionRoutes);
+app.use("/onboarding", onboardingRoutes);
+app.use("/personalizacion", personalizacionRoutes);
 
 const PORT = process.env.PORT || 3000;
 
