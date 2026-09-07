@@ -213,6 +213,73 @@ export async function actualizarNegocio(req, res) {
   }
 }
 
+// ============ SUPER-ADMIN (solo dueño de la plataforma, negocioId = 1) ============
+
+function esSuperAdmin(req) {
+  return req.usuario?.rol === "ADMIN" && req.usuario?.negocioId === 1;
+}
+
+// Listar todos los negocios con métricas y facturación
+export async function listarNegocios(req, res) {
+  try {
+    if (!esSuperAdmin(req)) {
+      return res.status(403).json({ error: "Acceso solo para el administrador de la plataforma" });
+    }
+
+    const negocios = await prisma.negocio.findMany({
+      include: {
+        _count: {
+          select: { usuarios: true, clientes: true, pedidos: true },
+        },
+        suscripciones: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        facturas: {
+          where: { estado: "PENDIENTE" },
+          select: { id: true, total: true, fechaVencimiento: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(negocios);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al listar negocios" });
+  }
+}
+
+// Cambiar plan, estado o límites de un negocio (super-admin)
+export async function actualizarNegocioAdmin(req, res) {
+  try {
+    if (!esSuperAdmin(req)) {
+      return res.status(403).json({ error: "Acceso solo para el administrador de la plataforma" });
+    }
+
+    const { id } = req.params;
+    const { plan, estado, maxUsuarios, maxClientes, maxPedidosMes, maxSebastianMsg } = req.body;
+
+    const data = {};
+    if (plan) data.plan = plan;
+    if (estado) data.estado = estado;
+    if (maxUsuarios !== undefined) data.maxUsuarios = Number(maxUsuarios);
+    if (maxClientes !== undefined) data.maxClientes = Number(maxClientes);
+    if (maxPedidosMes !== undefined) data.maxPedidosMes = Number(maxPedidosMes);
+    if (maxSebastianMsg !== undefined) data.maxSebastianMsg = Number(maxSebastianMsg);
+
+    const negocio = await prisma.negocio.update({
+      where: { id: Number(id) },
+      data,
+    });
+
+    res.json(negocio);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar negocio" });
+  }
+}
+
 export async function obtenerPlanes(req, res) {
   try {
     const planes = [

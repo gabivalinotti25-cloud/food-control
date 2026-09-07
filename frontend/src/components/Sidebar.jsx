@@ -8,6 +8,7 @@ const navItems = [
   { to: "/estadisticas", label: "Estadísticas", icon: "📊" },
   { to: "/suscripcion", label: "Suscripción", icon: "💎", admin: true },
   { to: "/usuarios", label: "Usuarios", icon: "🧑‍💼", admin: true },
+  { to: "/negocios", label: "Negocios", icon: "🏢", admin: true },
   { to: "/configuracion", label: "Configuración", icon: "⚙️", admin: true },
 ];
 
