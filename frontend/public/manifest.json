@@ -1,0 +1,17 @@
+{
+  "name": "Food Control",
+  "short_name": "Food Control",
+  "description": "Sistema de gestión diaria para negocios de comida",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
+import api from "../services/api";
 
 const navItems = [
   { to: "/", label: "Operaciones", icon: "📅", end: true },
@@ -14,6 +16,22 @@ const navItems = [
 
 export default function Sidebar() {
   const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+  const [negocio, setNegocio] = useState(null);
+
+  useEffect(() => {
+    api.get("/negocios")
+      .then((res) => {
+        setNegocio(res.data);
+        // Aplicar colores del negocio como variables CSS
+        if (res.data.colorPrimario) {
+          document.documentElement.style.setProperty("--color-primario", res.data.colorPrimario);
+        }
+        if (res.data.colorSecundario) {
+          document.documentElement.style.setProperty("--color-secundario", res.data.colorSecundario);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   function handleLogout() {
     localStorage.removeItem("token");
@@ -29,11 +47,21 @@ export default function Sidebar() {
     <aside className="w-64 min-h-screen bg-[#0f172a] text-white flex flex-col shrink-0">
       <div className="p-6 border-b border-slate-700/80">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-lg font-bold">
-            FC
-          </div>
+          {negocio?.logoUrl ? (
+            <img
+              src={negocio.logoUrl}
+              alt={negocio.nombre}
+              className="w-10 h-10 rounded-xl object-cover bg-white"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-lg font-bold">
+              {(negocio?.nombre || "FC").slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div>
-            <h1 className="text-lg font-bold leading-tight">Food Control</h1>
+            <h1 className="text-lg font-bold leading-tight">
+              {negocio?.nombre || "Food Control"}
+            </h1>
             <p className="text-xs text-slate-400">Gestión diaria</p>
           </div>
         </div>
