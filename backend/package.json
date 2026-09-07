@@ -28,7 +28,8 @@
     "ollama": "^0.6.3",
     "openai": "^7.8.0",
     "pg": "^8.22.0",
-    "twilio": "^6.0.2"
+    "twilio": "^6.0.2",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "prisma": "^6.16.2"

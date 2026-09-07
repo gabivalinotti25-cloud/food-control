@@ -73,6 +73,20 @@ app.use("/facturacion", facturacionRoutes);
 app.use("/onboarding", onboardingRoutes);
 app.use("/personalizacion", personalizacionRoutes);
 
+// 404 para rutas no encontradas
+app.use((req, res) => {
+  res.status(404).json({ error: "Ruta no encontrada" });
+});
+
+// Manejo centralizado de errores
+app.use((err, req, res, next) => {
+  console.error(`[ERROR] ${req.method} ${req.path}:`, err);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({
+    error: err.message || "Error interno del servidor",
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, '0.0.0.0', () => {

@@ -8,11 +8,12 @@ import {
   actualizarNegocioAdmin,
 } from "../controllers/negociosController.js";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
+import { validar, schemaRegistrarNegocio } from "../middleware/validar.js";
 
 const router = Router();
 
 // Rutas públicas
-router.post("/registrar", registrarNegocio);
+router.post("/registrar", validar(schemaRegistrarNegocio), registrarNegocio);
 router.get("/planes", obtenerPlanes);
 
 // Rutas protegidas

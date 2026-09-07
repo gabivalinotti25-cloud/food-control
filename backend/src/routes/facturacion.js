@@ -12,6 +12,7 @@ import {
   facturasDeNegocio,
 } from "../controllers/facturacionController.js";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
+import { validar, schemaCrearFacturaAdmin } from "../middleware/validar.js";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.post("/:id/anular", authMiddleware, adminMiddleware, anularFactura);
 
 // Super-admin (dueño de la plataforma)
 router.get("/admin/negocio/:negocioId", authMiddleware, adminMiddleware, facturasDeNegocio);
-router.post("/admin/crear", authMiddleware, adminMiddleware, crearFacturaAdmin);
+router.post("/admin/crear", authMiddleware, adminMiddleware, validar(schemaCrearFacturaAdmin), crearFacturaAdmin);
 router.post("/admin/:id/pagar", authMiddleware, adminMiddleware, marcarPagadaAdmin);
 
 // Rutas para cron jobs (proteger con secret en producción)
