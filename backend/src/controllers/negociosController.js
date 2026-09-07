@@ -258,6 +258,85 @@ export async function listarNegocios(req, res) {
   }
 }
 
+// Resumen global de la plataforma (super-admin)
+export async function resumenPlataforma(req, res) {
+  try {
+    if (!esSuperAdmin(req)) {
+      return res.status(403).json({ error: "Acceso solo para el administrador de la plataforma" });
+    }
+
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
+
+    const [
+      totalNegocios,
+      negociosActivos,
+      negociosSuspendidos,
+      negociosNuevosMes,
+      facturasPendientes,
+      facturasVencidas,
+      ingresosMes,
+      pedidosMes,
+    ] = await Promise.all([
+      prisma.negocio.count(),
+      prisma.negocio.count({ where: { estado: "ACTIVO" } }),
+      prisma.negocio.count({ where: { estado: "SUSPENDIDO" } }),
+      prisma.negocio.count({ where: { createdAt: { gte: inicioMes } } }),
+      prisma.factura.count({ where: { estado: "PENDIENTE" } }),
+      prisma.factura.count({ where: { estado: "VENCIDA" } }),
+      prisma.factura.aggregate({
+        where: { estado: "PAGADA", fechaPago: { gte: inicioMes } },
+        _sum: { total: true },
+      }),
+      prisma.pedido.count({ where: { fecha: { gte: inicioMes } } }),
+    ]);
+
+    // Actividad por negocio (solo conteos, sin datos sensibles)
+    const actividad = await prisma.negocio.findMany({
+      select: {
+        id: true,
+        nombre: true,
+        plan: true,
+        estado: true,
+        createdAt: true,
+        _count: { select: { usuarios: true, clientes: true, pedidos: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Pedidos del mes por negocio
+    const pedidosPorNegocio = await prisma.pedido.groupBy({
+      by: ["negocioId"],
+      where: { fecha: { gte: inicioMes } },
+      _count: { id: true },
+    });
+    const pedidosMap = Object.fromEntries(
+      pedidosPorNegocio.map((p) => [p.negocioId, p._count.id])
+    );
+
+    res.json({
+      totales: {
+        negocios: totalNegocios,
+        activos: negociosActivos,
+        suspendidos: negociosSuspendidos,
+        nuevosEsteMes: negociosNuevosMes,
+        facturasPendientes,
+        facturasVencidas,
+        ingresosMes: ingresosMes._sum.total || 0,
+        pedidosMes,
+      },
+      actividad: actividad.map((n) => ({
+        ...n,
+        pedidosEsteMes: pedidosMap[n.id] || 0,
+      })),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener resumen" });
+  }
+}
+
 // Cambiar plan, estado o límites de un negocio (super-admin)
 export async function actualizarNegocioAdmin(req, res) {
   try {

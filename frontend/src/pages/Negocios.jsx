@@ -20,6 +20,7 @@ const badgeEstado = {
 
 export default function Negocios() {
   const [negocios, setNegocios] = useState([]);
+  const [resumen, setResumen] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
@@ -105,8 +106,12 @@ export default function Negocios() {
   async function cargarNegocios() {
     setLoading(true);
     try {
-      const res = await api.get("/negocios/admin/todos");
-      setNegocios(res.data);
+      const [negociosRes, resumenRes] = await Promise.all([
+        api.get("/negocios/admin/todos"),
+        api.get("/negocios/admin/resumen"),
+      ]);
+      setNegocios(negociosRes.data);
+      setResumen(resumenRes.data);
     } catch (err) {
       setError(err.response?.data?.error || "Error al cargar negocios");
     } finally {
@@ -300,6 +305,42 @@ export default function Negocios() {
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {/* Resumen de la plataforma */}
+        {resumen && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-xs text-gray-500 uppercase">Negocios</p>
+              <p className="text-2xl font-bold">{resumen.totales.negocios}</p>
+              <p className="text-xs text-green-600">{resumen.totales.activos} activos</p>
+              {resumen.totales.suspendidos > 0 && (
+                <p className="text-xs text-yellow-600">{resumen.totales.suspendidos} suspendidos</p>
+              )}
+            </div>
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-xs text-gray-500 uppercase">Ingresos del mes</p>
+              <p className="text-2xl font-bold text-green-600">
+                Gs. {formatoGs(resumen.totales.ingresosMes)}
+              </p>
+              <p className="text-xs text-gray-500">facturas pagadas</p>
+            </div>
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-xs text-gray-500 uppercase">Por cobrar</p>
+              <p className="text-2xl font-bold text-yellow-600">{resumen.totales.facturasPendientes}</p>
+              {resumen.totales.facturasVencidas > 0 && (
+                <p className="text-xs text-red-600">{resumen.totales.facturasVencidas} vencidas</p>
+              )}
+            </div>
+            <div className="bg-white rounded-xl shadow p-4">
+              <p className="text-xs text-gray-500 uppercase">Actividad del mes</p>
+              <p className="text-2xl font-bold">{resumen.totales.pedidosMes}</p>
+              <p className="text-xs text-gray-500">pedidos en toda la plataforma</p>
+              {resumen.totales.nuevosEsteMes > 0 && (
+                <p className="text-xs text-blue-600">+{resumen.totales.nuevosEsteMes} negocios nuevos</p>
+              )}
+            </div>
           </div>
         )}
 
