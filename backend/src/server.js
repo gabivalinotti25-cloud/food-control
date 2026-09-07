@@ -29,6 +29,7 @@ import suscripcionesRoutes from "./routes/suscripciones.js";
 import facturacionRoutes from "./routes/facturacion.js";
 import onboardingRoutes from "./routes/onboarding.js";
 import personalizacionRoutes from "./routes/personalizacion.js";
+import { ejecutarVerificacionVencidas } from "./controllers/facturacionController.js";
 
 const app = express();
 
@@ -77,3 +78,19 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor iniciado en puerto ${PORT}`);
 });
+
+// Cron interno: verificar facturas vencidas y suspender negocios morosos
+// Corre al iniciar y luego cada 24 horas
+async function verificarVencidasSeguro() {
+  try {
+    const r = await ejecutarVerificacionVencidas();
+    if (r.facturasVencidas > 0 || r.negociosSuspendidos > 0) {
+      console.log(`⏰ Facturas vencidas: ${r.facturasVencidas}, negocios suspendidos: ${r.negociosSuspendidos}`);
+    }
+  } catch (error) {
+    console.error("Error en verificación de facturas vencidas:", error.message);
+  }
+}
+
+verificarVencidasSeguro();
+setInterval(verificarVencidasSeguro, 24 * 60 * 60 * 1000);

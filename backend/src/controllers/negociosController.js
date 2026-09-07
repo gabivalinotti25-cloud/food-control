@@ -1,6 +1,7 @@
 import prisma from "../prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { emailBienvenida } from "../services/email.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -128,6 +129,13 @@ export async function registrarNegocio(req, res) {
     await prisma.onboarding.create({
       data: { negocioId: negocio.id },
     });
+
+    // Email de bienvenida (no bloquea el registro si falla)
+    emailBienvenida({
+      email: admin.email,
+      nombreNegocio: negocio.nombre,
+      nombreAdmin: admin.nombre,
+    }).catch(() => {});
 
     const token = jwt.sign(
       { id: admin.id, email: admin.email, rol: admin.rol, negocioId: admin.negocioId },
