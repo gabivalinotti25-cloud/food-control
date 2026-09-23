@@ -28,6 +28,7 @@ export async function crearProducto(req, res) {
     const {
       nombre,
       precio,
+      numero,
       esLibre = false,
       esFijo = false,
       esEspecial = false,
@@ -37,6 +38,7 @@ export async function crearProducto(req, res) {
       data: {
         nombre,
         precio: Number(precio),
+        numero: numero ? Number(numero) : null,
         esLibre,
         esFijo,
         esEspecial,
@@ -64,6 +66,7 @@ export async function editarProducto(req, res) {
     const {
       nombre,
       precio,
+      numero,
       esFijo,
       esEspecial,
     } = req.body;
@@ -73,6 +76,7 @@ export async function editarProducto(req, res) {
       data: {
         nombre,
         precio: Number(precio),
+        numero: numero ? Number(numero) : null,
         ...(esFijo !== undefined && { esFijo }),
         ...(esEspecial !== undefined && { esEspecial }),
       },

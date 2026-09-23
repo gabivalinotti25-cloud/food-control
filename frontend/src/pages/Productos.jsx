@@ -8,12 +8,14 @@ export default function Productos() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
+  const [numero, setNumero] = useState("");
   const [esFijo, setEsFijo] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [editandoId, setEditandoId] = useState(null);
   const [editandoProducto, setEditandoProducto] = useState({
     nombre: "",
     precio: "",
+    numero: "",
     esFijo: false,
   });
 
@@ -28,9 +30,10 @@ export default function Productos() {
 
   async function guardarProducto(e) {
     e.preventDefault();
-    await api.post("/productos", { nombre, precio, esFijo });
+    await api.post("/productos", { nombre, precio, numero, esFijo });
     setNombre("");
     setPrecio("");
+    setNumero("");
     setEsFijo(false);
     setMostrarFormulario(false);
     cargarProductos();
@@ -41,6 +44,7 @@ export default function Productos() {
     setEditandoProducto({
       nombre: producto.nombre,
       precio: producto.precio,
+      numero: producto.numero ?? "",
       esFijo: producto.esFijo,
     });
   }
@@ -95,7 +99,11 @@ export default function Productos() {
         {mostrarFormulario && (
           <form onSubmit={guardarProducto} className="fc-card p-5">
             <h2 className="font-bold mb-4">Nuevo producto</h2>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-4 gap-4">
+              <div>
+                <label className="fc-label">Número (caja rápida)</label>
+                <input className="fc-input" type="number" min="1" placeholder="Ej: 1" value={numero} onChange={(e) => setNumero(e.target.value)} />
+              </div>
               <div>
                 <label className="fc-label">Nombre</label>
                 <input className="fc-input" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
@@ -130,6 +138,7 @@ export default function Productos() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-slate-500 border-b">
+                      <th className="px-5 py-2 w-16">N°</th>
                       <th className="px-5 py-2">Producto</th>
                       <th className="px-5 py-2">Precio</th>
                       <th className="px-5 py-2">Estado</th>
@@ -139,6 +148,25 @@ export default function Productos() {
                   <tbody>
                     {grupo.items.map((producto) => (
                       <tr key={producto.id} className="border-b border-slate-50">
+                        <td className="px-5 py-3">
+                          {editandoId === producto.id ? (
+                            <input
+                              type="number"
+                              min="1"
+                              className="fc-input w-16"
+                              value={editandoProducto.numero}
+                              onChange={(e) =>
+                                setEditandoProducto({ ...editandoProducto, numero: e.target.value })
+                              }
+                            />
+                          ) : producto.numero ? (
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-900 text-white font-bold text-sm">
+                              {producto.numero}
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">—</span>
+                          )}
+                        </td>
                         <td className="px-5 py-3">
                           {editandoId === producto.id ? (
                             <input

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import CalendarStrip, { ResumenDiaCards, BadgePago } from "../components/CalendarStrip";
@@ -28,6 +28,11 @@ export default function OperacionesDia() {
   const [formaPago, setFormaPago] = useState("EFECTIVO");
   const [items, setItems] = useState([]);
   const [montoLibre, setMontoLibre] = useState({ descripcion: "", precio: "" });
+
+  // Caja registradora: entrada rápida por número
+  const [numeroInput, setNumeroInput] = useState("");
+  const [avisoNumero, setAvisoNumero] = useState("");
+  const numeroRef = useRef(null);
 
   const [menuLibre, setMenuLibre] = useState({ nombre: "", precio: "" });
 
@@ -89,6 +94,53 @@ export default function OperacionesDia() {
         },
       ];
     });
+  }
+
+  // Agrega o suma cantidad (modo caja registradora)
+  function agregarItem(producto) {
+    setItems((prev) => {
+      const existe = prev.find((i) => i.productoId === producto.id);
+      if (existe) {
+        return prev.map((i) =>
+          i.productoId === producto.id ? { ...i, cantidad: i.cantidad + 1 } : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          productoId: producto.id,
+          descripcion: producto.nombre,
+          cantidad: 1,
+          precioUnitario: producto.precio,
+        },
+      ];
+    });
+  }
+
+  // Mapa número → producto (solo platos del menú del día)
+  const productosPorNumero = useMemo(() => {
+    const mapa = {};
+    for (const { producto } of menuProductos) {
+      if (producto.numero != null) mapa[producto.numero] = producto;
+    }
+    return mapa;
+  }, [menuProductos]);
+
+  function ingresarNumero(e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const n = Number(numeroInput);
+    if (!n) return;
+    const producto = productosPorNumero[n];
+    if (producto) {
+      agregarItem(producto);
+      setAvisoNumero(`✓ ${producto.nombre}`);
+    } else {
+      setAvisoNumero(`N° ${n} no está en el menú`);
+    }
+    setNumeroInput("");
+    setTimeout(() => setAvisoNumero(""), 2000);
+    numeroRef.current?.focus();
   }
 
   function actualizarCantidad(productoId, cantidad) {
@@ -272,48 +324,108 @@ export default function OperacionesDia() {
                 </div>
 
                 <div>
-                  <label className="fc-label">Ítems del menú</label>
+                  <label className="fc-label">Caja rápida — número del plato</label>
                   {menuProductos.length === 0 ? (
                     <p className="text-sm text-slate-500 py-2">
                       Cargá el menú en la pestaña Menú primero.
                     </p>
                   ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {menuProductos.map(({ producto }) => {
-                        const sel = items.find((i) => i.productoId === producto.id);
-                        return (
-                          <div
-                            key={producto.id}
-                            className={`flex items-center justify-between p-2 rounded-lg border ${
-                              sel ? "border-blue-300 bg-blue-50" : "border-slate-200"
-                            }`}
-                          >
-                            <label className="flex items-center gap-2 flex-1 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={!!sel}
-                                onChange={() => toggleItem(producto)}
-                              />
-                              <span className="text-sm font-medium">{producto.nombre}</span>
-                              <span className="text-xs text-slate-500">
-                                Gs. {formatoGs(producto.precio)}
-                              </span>
-                            </label>
-                            {sel && (
-                              <input
-                                type="number"
-                                min="1"
-                                value={sel.cantidad}
-                                onChange={(e) =>
-                                  actualizarCantidad(producto.id, e.target.value)
-                                }
-                                className="fc-input w-16 text-center"
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <>
+                      <input
+                        ref={numeroRef}
+                        type="number"
+                        min="1"
+                        inputMode="numeric"
+                        className="fc-input text-center text-2xl font-bold h-14"
+                        placeholder="N°"
+                        value={numeroInput}
+                        onChange={(e) => setNumeroInput(e.target.value)}
+                        onKeyDown={ingresarNumero}
+                      />
+                      <p className={`text-xs mt-1 h-4 ${avisoNumero.startsWith("✓") ? "text-green-600" : "text-red-500"}`}>
+                        {avisoNumero || "Escribí el número y presioná Enter"}
+                      </p>
+
+                      {/* Botonera numerada del menú */}
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {menuProductos
+                          .filter(({ producto }) => producto.numero != null)
+                          .sort((a, b) => a.producto.numero - b.producto.numero)
+                          .map(({ producto }) => {
+                            const sel = items.find((i) => i.productoId === producto.id);
+                            return (
+                              <button
+                                key={producto.id}
+                                type="button"
+                                onClick={() => agregarItem(producto)}
+                                className={`relative p-3 rounded-xl border-2 text-left transition ${
+                                  sel
+                                    ? "border-blue-400 bg-blue-50"
+                                    : "border-slate-200 bg-white hover:border-slate-300"
+                                }`}
+                              >
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-900 text-white font-bold text-sm">
+                                  {producto.numero}
+                                </span>
+                                <p className="text-xs font-medium mt-1 leading-tight">
+                                  {producto.nombre}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  Gs. {formatoGs(producto.precio)}
+                                </p>
+                                {sel && (
+                                  <span className="absolute top-1 right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                    {sel.cantidad}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                      </div>
+
+                      {/* Platos sin número asignado */}
+                      {menuProductos.some(({ producto }) => producto.numero == null) && (
+                        <div className="mt-3 space-y-1">
+                          <p className="text-xs text-slate-400 uppercase font-semibold">Sin número</p>
+                          {menuProductos
+                            .filter(({ producto }) => producto.numero == null)
+                            .map(({ producto }) => {
+                              const sel = items.find((i) => i.productoId === producto.id);
+                              return (
+                                <div
+                                  key={producto.id}
+                                  className={`flex items-center justify-between p-2 rounded-lg border ${
+                                    sel ? "border-blue-300 bg-blue-50" : "border-slate-200"
+                                  }`}
+                                >
+                                  <label className="flex items-center gap-2 flex-1 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!sel}
+                                      onChange={() => toggleItem(producto)}
+                                    />
+                                    <span className="text-sm font-medium">{producto.nombre}</span>
+                                    <span className="text-xs text-slate-500">
+                                      Gs. {formatoGs(producto.precio)}
+                                    </span>
+                                  </label>
+                                  {sel && (
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={sel.cantidad}
+                                      onChange={(e) =>
+                                        actualizarCantidad(producto.id, e.target.value)
+                                      }
+                                      className="fc-input w-16 text-center"
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
