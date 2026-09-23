@@ -71,8 +71,10 @@ async function main() {
   }
 
   // Aplicar el schema completo
+  // --accept-data-loss: evita que db push se cuelgue esperando confirmación
+  // interactiva por warnings de enums/constraints en entornos sin TTY (Render)
   console.log("📦 Ejecutando prisma db push...");
-  execSync("npx prisma db push --skip-generate", { stdio: "inherit" });
+  execSync("npx prisma db push --skip-generate --accept-data-loss", { stdio: "inherit" });
   console.log("✅ Schema sincronizado");
 }
 
