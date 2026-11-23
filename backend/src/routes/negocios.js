@@ -7,7 +7,6 @@ import {
   listarNegocios,
   actualizarNegocioAdmin,
   resumenPlataforma,
-  limpiarTodo,
 } from "../controllers/negociosController.js";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
 import { validar, schemaRegistrarNegocio } from "../middleware/validar.js";
@@ -26,6 +25,5 @@ router.put("/", authMiddleware, adminMiddleware, actualizarNegocio);
 router.get("/admin/todos", authMiddleware, adminMiddleware, listarNegocios);
 router.get("/admin/resumen", authMiddleware, adminMiddleware, resumenPlataforma);
 router.put("/admin/:id", authMiddleware, adminMiddleware, actualizarNegocioAdmin);
-router.post("/admin/limpiar", authMiddleware, adminMiddleware, limpiarTodo);
 
 export default router;
