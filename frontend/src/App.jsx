@@ -11,8 +11,6 @@ import HistorialSebastian from "./pages/HistorialSebastian";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import Landing from "./pages/Landing";
-import Usuarios from "./pages/Usuarios";
-import Negocios from "./pages/Negocios";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -76,22 +74,6 @@ function App() {
           element={
             <ProtectedRoute requiredRole="ADMIN">
               <Configuracion />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/usuarios"
-          element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <Usuarios />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/negocios"
-          element={
-            <ProtectedRoute requiredRole="ADMIN">
-              <Negocios />
             </ProtectedRoute>
           }
         />
